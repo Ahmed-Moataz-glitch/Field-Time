@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:field_time/l10n/generated/app_localizations.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:field_time/app/router/app_router.dart';
 import 'package:field_time/app/theme/app_theme.dart';
+import 'package:field_time/core/localization/locale_cubit.dart';
+import 'package:field_time/core/localization/locale_state.dart';
+import 'package:field_time/core/services/supabase_service.dart';
 import 'package:field_time/core/utils/app_constants.dart';
 import 'package:field_time/features/auth/data/repositories/auth_repository.dart';
 import 'package:field_time/features/auth/presentation/cubit/auth_cubit.dart';
@@ -16,12 +20,7 @@ import 'package:field_time/features/profile/presentation/cubit/profile_cubit.dar
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  try {
-    await Supabase.initialize(
-      url: AppConstants.supabaseProjectUrl,
-      publishableKey: AppConstants.supabaseProjectPublishableKey,
-    );
-  } catch (_) {}
+  await SupabaseService.init();
 
   runApp(const FieldTimeApp());
 }
@@ -37,6 +36,7 @@ class FieldTimeApp extends StatelessWidget {
 
     return MultiBlocProvider(
       providers: [
+        BlocProvider(create: (_) => LocaleCubit()),
         BlocProvider(create: (_) => AuthCubit(authRepo)),
         BlocProvider(create: (_) => HomeCubit(fieldRepo)),
         BlocProvider(create: (_) => BookingCubit(bookingRepo)),
@@ -48,17 +48,23 @@ class FieldTimeApp extends StatelessWidget {
         minTextAdapt: true,
         splitScreenMode: true,
         builder: (context, child) {
-          return MaterialApp.router(
-            title: AppConstants.appName,
-            debugShowCheckedModeBanner: false,
-            theme: AppTheme.lightTheme,
-            darkTheme: AppTheme.darkTheme,
-            themeMode: ThemeMode.light,
-            routerConfig: AppRouter.router,
-            builder: (context, widget) {
-              return Directionality(
-                textDirection: TextDirection.rtl,
-                child: widget ?? const SizedBox.shrink(),
+          return BlocBuilder<LocaleCubit, LocaleState>(
+            builder: (context, localeState) {
+              return MaterialApp.router(
+                title: AppConstants.appName,
+                debugShowCheckedModeBanner: false,
+                theme: AppTheme.lightTheme,
+                darkTheme: AppTheme.darkTheme,
+                themeMode: ThemeMode.system,
+                locale: localeState.locale,
+                supportedLocales: AppLocalizations.supportedLocales,
+                localizationsDelegates: const [
+                  AppLocalizations.delegate,
+                  GlobalMaterialLocalizations.delegate,
+                  GlobalWidgetsLocalizations.delegate,
+                  GlobalCupertinoLocalizations.delegate,
+                ],
+                routerConfig: AppRouter.router,
               );
             },
           );
