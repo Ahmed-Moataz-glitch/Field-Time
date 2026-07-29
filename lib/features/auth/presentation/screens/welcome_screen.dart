@@ -5,12 +5,15 @@ import 'package:field_time/core/constants/app_colors.dart';
 import 'package:field_time/core/constants/app_typography.dart';
 import 'package:field_time/core/widgets/primary_button.dart';
 import 'package:field_time/core/widgets/secondary_outlined_button.dart';
+import 'package:field_time/l10n/generated/app_localizations.dart';
 
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Scaffold(
       body: Stack(
         children: [
@@ -76,20 +79,20 @@ class WelcomeScreen extends StatelessWidget {
                   SizedBox(height: 12.h),
                   // Subtitle
                   Text(
-                    'احجز ملعبك المفضل في ثوانٍ',
+                    l10n.welcomeSubtitle,
                     style: AppTypography.body(color: Colors.white.withValues(alpha: 0.9)),
                     textAlign: TextAlign.center,
                   ),
                   const Spacer(flex: 3),
                   // Sign In Button
                   PrimaryButton(
-                    title: 'تسجيل الدخول',
+                    title: l10n.login,
                     onPressed: () => context.push('/login'),
                   ),
                   SizedBox(height: 16.h),
                   // Create Account Button
                   SecondaryOutlinedButton(
-                    title: 'إنشاء حساب جديد',
+                    title: l10n.register,
                     onPressed: () => context.push('/register'),
                   ),
                   SizedBox(height: 24.h),

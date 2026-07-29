@@ -8,6 +8,7 @@ import 'package:field_time/core/widgets/custom_text_field.dart';
 import 'package:field_time/core/widgets/primary_button.dart';
 import 'package:field_time/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:field_time/features/auth/presentation/cubit/auth_state.dart';
+import 'package:field_time/l10n/generated/app_localizations.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -22,6 +23,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
+  String _selectedRole = 'user'; // 'user' (Player) or 'owner' (Field Owner)
 
   @override
   void dispose() {
@@ -35,16 +37,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
   void _onRegisterPressed() {
     if (_formKey.currentState?.validate() ?? false) {
       context.read<AuthCubit>().register(
-            _nameController.text.trim(),
-            _emailController.text.trim(),
-            _phoneController.text.trim(),
-            _passwordController.text.trim(),
+            fullName: _nameController.text.trim(),
+            email: _emailController.text.trim(),
+            phone: _phoneController.text.trim(),
+            password: _passwordController.text.trim(),
+            role: _selectedRole,
           );
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
@@ -76,7 +80,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'إنشاء حساب جديد ⚽',
+                    '${l10n.register} ⚽',
                     style: AppTypography.heading1(
                       color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
                     ),
@@ -88,46 +92,86 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
                     ),
                   ),
-                  SizedBox(height: 32.h),
+                  SizedBox(height: 24.h),
+
+                  // Account Type Selector (Player vs Field Owner)
+                  Text(
+                    'نوع الحساب',
+                    style: AppTypography.caption(
+                      color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                    ),
+                  ),
+                  SizedBox(height: 8.h),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _RoleCard(
+                          title: 'لاعب / حاجز',
+                          icon: Icons.sports_soccer,
+                          isSelected: _selectedRole == 'user',
+                          onTap: () => setState(() => _selectedRole = 'user'),
+                        ),
+                      ),
+                      SizedBox(width: 12.w),
+                      Expanded(
+                        child: _RoleCard(
+                          title: 'صاحب ملعب',
+                          icon: Icons.stadium_outlined,
+                          isSelected: _selectedRole == 'owner',
+                          onTap: () => setState(() => _selectedRole = 'owner'),
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 24.h),
+
                   // Name Field
                   CustomTextField(
                     controller: _nameController,
-                    hintText: 'الاسم الكامل',
+                    hintText: l10n.fullName,
                     prefixIcon: const Icon(Icons.person_outline, color: AppColors.iconGrey),
-                    validator: (val) => (val == null || val.isEmpty) ? 'يرجى إدخال الاسم' : null,
+                    validator: (val) => (val == null || val.trim().isEmpty) ? 'يرجى إدخال الاسم' : null,
                   ),
                   SizedBox(height: 16.h),
                   // Email Field
                   CustomTextField(
                     controller: _emailController,
-                    hintText: 'البريد الإلكتروني',
+                    hintText: l10n.email,
                     keyboardType: TextInputType.emailAddress,
                     prefixIcon: const Icon(Icons.email_outlined, color: AppColors.iconGrey),
-                    validator: (val) => (val == null || val.isEmpty) ? 'يرجى إدخال البريد' : null,
+                    validator: (val) {
+                      if (val == null || val.trim().isEmpty) return 'يرجى إدخال البريد';
+                      if (!val.contains('@')) return 'بريد غير صالح';
+                      return null;
+                    },
                   ),
                   SizedBox(height: 16.h),
                   // Phone Field
                   CustomTextField(
                     controller: _phoneController,
-                    hintText: 'رقم الهاتف',
+                    hintText: l10n.phone,
                     keyboardType: TextInputType.phone,
                     prefixIcon: const Icon(Icons.phone_outlined, color: AppColors.iconGrey),
-                    validator: (val) => (val == null || val.isEmpty) ? 'يرجى إدخال رقم الهاتف' : null,
+                    validator: (val) => (val == null || val.trim().isEmpty) ? 'يرجى إدخال رقم الهاتف' : null,
                   ),
                   SizedBox(height: 16.h),
                   // Password Field
                   CustomTextField(
                     controller: _passwordController,
-                    hintText: 'كلمة المرور',
+                    hintText: l10n.password,
                     isPassword: true,
                     prefixIcon: const Icon(Icons.lock_outline, color: AppColors.iconGrey),
-                    validator: (val) => (val == null || val.isEmpty) ? 'يرجى إدخال كلمة المرور' : null,
+                    validator: (val) {
+                      if (val == null || val.trim().isEmpty) return 'يرجى إدخال كلمة المرور';
+                      if (val.trim().length < 6) return 'كلمة المرور لا تقل عن 6 أحرف';
+                      return null;
+                    },
                   ),
                   SizedBox(height: 32.h),
                   BlocBuilder<AuthCubit, AuthState>(
                     builder: (context, state) {
                       return PrimaryButton(
-                        title: 'إنشاء الحساب',
+                        title: l10n.register,
                         isLoading: state is AuthLoading,
                         onPressed: _onRegisterPressed,
                       );
@@ -138,7 +182,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        'لديك حساب بالفعل؟ ',
+                        '${l10n.alreadyHaveAccount} ',
                         style: AppTypography.body(
                           color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
                         ),
@@ -146,7 +190,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       GestureDetector(
                         onTap: () => context.pop(),
                         child: Text(
-                          'تسجيل الدخول',
+                          l10n.login,
                           style: AppTypography.body(color: AppColors.primary).copyWith(
                             fontWeight: FontWeight.bold,
                           ),
@@ -158,6 +202,64 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _RoleCard extends StatelessWidget {
+  final String title;
+  final IconData icon;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _RoleCard({
+    required this.title,
+    required this.icon,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: EdgeInsets.symmetric(vertical: 14.h, horizontal: 12.w),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppColors.primary.withValues(alpha: 0.12)
+              : (isDark ? AppColors.cardDark : AppColors.cardLight),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? AppColors.primary : AppColors.greyBorder,
+            width: isSelected ? 2 : 1,
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              size: 20.sp,
+              color: isSelected ? AppColors.primary : AppColors.iconGrey,
+            ),
+            SizedBox(width: 8.w),
+            Text(
+              title,
+              style: AppTypography.caption(
+                color: isSelected
+                    ? AppColors.primary
+                    : (isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight),
+              ).copyWith(
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              ),
+            ),
+          ],
         ),
       ),
     );
