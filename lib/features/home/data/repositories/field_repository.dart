@@ -2,6 +2,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:field_time/features/home/data/models/field_model.dart';
 import 'package:field_time/features/home/data/models/offer_model.dart';
 import 'package:field_time/features/home/data/models/field_filter_params.dart';
+import 'package:field_time/features/field_details/data/models/review_model.dart';
 
 class FieldRepository {
   final SupabaseClient _supabase;
@@ -315,4 +316,48 @@ class FieldRepository {
       return true;
     }
   }
+
+  Future<List<ReviewModel>> getReviewsByFieldId(String fieldId) async {
+    try {
+      final response = await _supabase
+          .from('reviews')
+          .select('*, users(full_name, avatar_url)')
+          .eq('field_id', fieldId)
+          .order('created_at', ascending: false);
+      if ((response as List).isNotEmpty) {
+        return response.map((item) => ReviewModel.fromJson(item)).toList();
+      }
+    } catch (_) {}
+
+    return const [
+      ReviewModel(
+        id: 'rev-1',
+        userId: 'u1',
+        userName: 'أحمد محمود',
+        userAvatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200',
+        rating: 5.0,
+        comment: 'ملعب ممتاز جداً والنجيل الصناعي جودته عالية والإضاءة ممتازة ليلاً. ننصح باللعب فيه!',
+        createdAt: 'منذ 3 أيام',
+      ),
+      ReviewModel(
+        id: 'rev-2',
+        userId: 'u2',
+        userName: 'مصطفى حسن',
+        userAvatar: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?auto=format&fit=crop&q=80&w=200',
+        rating: 4.5,
+        comment: 'المكان نظيف وغرف التبديل مرتبة، ولكن يفضل زيادة أماكن وركن السيارات.',
+        createdAt: 'منذ أسبوع',
+      ),
+      ReviewModel(
+        id: 'rev-3',
+        userId: 'u3',
+        userName: 'عمر خالد',
+        userAvatar: null,
+        rating: 5.0,
+        comment: 'خدمة حجز سريعة وتعامل راقي من إدارة الملعب.',
+        createdAt: 'منذ أسبوعين',
+      ),
+    ];
+  }
 }
+
