@@ -218,11 +218,23 @@ abstract class AppLocalizations {
   /// **'Popular Fields'**
   String get popularFields;
 
+  /// No description provided for @recommendedFields.
+  ///
+  /// In en, this message translates to:
+  /// **'Recommended Fields'**
+  String get recommendedFields;
+
   /// No description provided for @topRatedFields.
   ///
   /// In en, this message translates to:
   /// **'Top Rated Fields'**
   String get topRatedFields;
+
+  /// No description provided for @specialOffers.
+  ///
+  /// In en, this message translates to:
+  /// **'Special Offers'**
+  String get specialOffers;
 
   /// No description provided for @categories.
   ///
@@ -451,6 +463,114 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Retry'**
   String get retry;
+
+  /// No description provided for @filterTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter Fields'**
+  String get filterTitle;
+
+  /// No description provided for @priceRange.
+  ///
+  /// In en, this message translates to:
+  /// **'Price Range (EGP / hr)'**
+  String get priceRange;
+
+  /// No description provided for @fieldType.
+  ///
+  /// In en, this message translates to:
+  /// **'Field Format'**
+  String get fieldType;
+
+  /// No description provided for @grassType.
+  ///
+  /// In en, this message translates to:
+  /// **'Grass Type'**
+  String get grassType;
+
+  /// No description provided for @indoorOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Indoor (Hall)'**
+  String get indoorOnly;
+
+  /// No description provided for @availableToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Available Today Only'**
+  String get availableToday;
+
+  /// No description provided for @minRating.
+  ///
+  /// In en, this message translates to:
+  /// **'Minimum Rating'**
+  String get minRating;
+
+  /// No description provided for @resetFilters.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset'**
+  String get resetFilters;
+
+  /// No description provided for @applyFilters.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply Filters'**
+  String get applyFilters;
+
+  /// No description provided for @selectLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Select City / Area'**
+  String get selectLocation;
+
+  /// No description provided for @allCities.
+  ///
+  /// In en, this message translates to:
+  /// **'All Cities'**
+  String get allCities;
+
+  /// No description provided for @cairo.
+  ///
+  /// In en, this message translates to:
+  /// **'Cairo'**
+  String get cairo;
+
+  /// No description provided for @giza.
+  ///
+  /// In en, this message translates to:
+  /// **'Giza'**
+  String get giza;
+
+  /// No description provided for @alexandria.
+  ///
+  /// In en, this message translates to:
+  /// **'Alexandria'**
+  String get alexandria;
+
+  /// No description provided for @october.
+  ///
+  /// In en, this message translates to:
+  /// **'6th of October'**
+  String get october;
+
+  /// No description provided for @taghmow.
+  ///
+  /// In en, this message translates to:
+  /// **'5th Settlement'**
+  String get taghmow;
+
+  /// No description provided for @greetingUser.
+  ///
+  /// In en, this message translates to:
+  /// **'Hello'**
+  String get greetingUser;
+
+  /// No description provided for @availableBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Available Today'**
+  String get availableBadge;
 }
 
 class _AppLocalizationsDelegate
