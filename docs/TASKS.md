@@ -109,14 +109,14 @@ In Progress
 
 # Owner Dashboard
 
-- [ ] Add Football Field
-- [ ] Edit Football Field
-- [ ] Delete Football Field
-- [ ] Upload Images
-- [ ] Manage Prices
-- [ ] Manage Availability
-- [ ] View Bookings
-- [ ] Statistics
+- [x] Add Football Field
+- [x] Edit Football Field
+- [x] Delete Football Field
+- [x] Upload Images
+- [x] Manage Prices
+- [x] Manage Availability
+- [x] View Bookings
+- [x] Statistics
 
 ---
 

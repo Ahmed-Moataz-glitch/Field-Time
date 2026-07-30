@@ -128,6 +128,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     child: Column(
                       children: [
                         _buildOptionTile(
+                          icon: Icons.storefront_outlined,
+                          title: 'لوحة تحكم صاحب الملعب',
+                          textColor: AppColors.primary,
+                          iconColor: AppColors.primary,
+                          onTap: () => context.push('/owner-dashboard'),
+                          isDark: isDark,
+                        ),
+                        const Divider(height: 1, color: AppColors.greyBorder),
+                        _buildOptionTile(
                           icon: Icons.person_outline,
                           title: 'المعلومات الشخصية',
                           onTap: () {},

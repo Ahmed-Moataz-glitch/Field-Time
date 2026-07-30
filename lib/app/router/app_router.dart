@@ -8,6 +8,10 @@ import 'package:field_time/features/booking/presentation/screens/booking_screen.
 import 'package:field_time/features/booking/presentation/screens/booking_success_screen.dart';
 import 'package:field_time/features/field_details/presentation/screens/field_details_screen.dart';
 import 'package:field_time/features/home/presentation/screens/main_layout_screen.dart';
+import 'package:field_time/features/owner_dashboard/presentation/screens/add_edit_field_screen.dart';
+import 'package:field_time/features/owner_dashboard/presentation/screens/owner_bookings_screen.dart';
+import 'package:field_time/features/owner_dashboard/presentation/screens/owner_dashboard_screen.dart';
+import 'package:field_time/features/owner_dashboard/presentation/screens/owner_statistics_screen.dart';
 
 abstract class AppRouter {
   static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -20,6 +24,11 @@ abstract class AppRouter {
   static const String fieldDetails = '/field-details/:id';
   static const String booking = '/booking';
   static const String bookingSuccess = '/booking-success';
+  static const String ownerDashboard = '/owner-dashboard';
+  static const String addField = '/add-field';
+  static const String editField = '/edit-field/:id';
+  static const String ownerBookings = '/owner-bookings';
+  static const String ownerStats = '/owner-stats';
 
   static final router = GoRouter(
     navigatorKey: navigatorKey,
@@ -76,6 +85,29 @@ abstract class AppRouter {
       GoRoute(
         path: bookingSuccess,
         builder: (context, state) => const BookingSuccessScreen(),
+      ),
+      GoRoute(
+        path: ownerDashboard,
+        builder: (context, state) => const OwnerDashboardScreen(),
+      ),
+      GoRoute(
+        path: addField,
+        builder: (context, state) => const AddEditFieldScreen(),
+      ),
+      GoRoute(
+        path: editField,
+        builder: (context, state) {
+          final id = state.pathParameters['id'];
+          return AddEditFieldScreen(fieldId: id);
+        },
+      ),
+      GoRoute(
+        path: ownerBookings,
+        builder: (context, state) => const OwnerBookingsScreen(),
+      ),
+      GoRoute(
+        path: ownerStats,
+        builder: (context, state) => const OwnerStatisticsScreen(),
       ),
     ],
   );
