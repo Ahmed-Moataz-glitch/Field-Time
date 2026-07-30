@@ -70,7 +70,13 @@ class AppLocalizationsAr extends AppLocalizations {
   String get popularFields => 'الملاعب الأكثر شعبية';
 
   @override
+  String get recommendedFields => 'ملاعب مقترحة لك';
+
+  @override
   String get topRatedFields => 'الأعلى تقييماً';
+
+  @override
+  String get specialOffers => 'عروض مميزة';
 
   @override
   String get categories => 'التصنيفات';
@@ -186,4 +192,58 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get retry => 'إعادة المحاولة';
+
+  @override
+  String get filterTitle => 'تصفية البحث';
+
+  @override
+  String get priceRange => 'نطاق السعر (جنيه / ساعة)';
+
+  @override
+  String get fieldType => 'نوع الملعب';
+
+  @override
+  String get grassType => 'نوع العشب';
+
+  @override
+  String get indoorOnly => 'مغطى (صالة مغلقة)';
+
+  @override
+  String get availableToday => 'متاح اليوم فقط';
+
+  @override
+  String get minRating => 'الحد الأدنى للتقييم';
+
+  @override
+  String get resetFilters => 'إعادة ضبط';
+
+  @override
+  String get applyFilters => 'تطبيق الفلترة';
+
+  @override
+  String get selectLocation => 'اختر المدينة / المنطقة';
+
+  @override
+  String get allCities => 'جميع المدن';
+
+  @override
+  String get cairo => 'القاهرة';
+
+  @override
+  String get giza => 'الجيزة';
+
+  @override
+  String get alexandria => 'الإسكندرية';
+
+  @override
+  String get october => '6 أكتوبر';
+
+  @override
+  String get taghmow => 'التجمع الخامس';
+
+  @override
+  String get greetingUser => 'مرحباً';
+
+  @override
+  String get availableBadge => 'متاح اليوم';
 }

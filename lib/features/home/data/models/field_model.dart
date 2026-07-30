@@ -19,6 +19,12 @@ class FieldModel extends Equatable {
   final List<String> images;
   final List<String> facilities;
   final bool isFavorite;
+  final bool isPopular;
+  final bool isRecommended;
+  final bool isAvailableToday;
+  final String? openingTime;
+  final String? closingTime;
+  final String? phone;
 
   const FieldModel({
     required this.id,
@@ -39,9 +45,29 @@ class FieldModel extends Equatable {
     required this.images,
     required this.facilities,
     this.isFavorite = false,
+    this.isPopular = false,
+    this.isRecommended = false,
+    this.isAvailableToday = true,
+    this.openingTime,
+    this.closingTime,
+    this.phone,
   });
 
   factory FieldModel.fromJson(Map<String, dynamic> json) {
+    List<String> parsedImages = [];
+    if (json['field_images'] is List) {
+      parsedImages = (json['field_images'] as List)
+          .map((img) => img['image_url'] as String? ?? '')
+          .where((url) => url.isNotEmpty)
+          .toList();
+    } else if (json['images'] is List) {
+      parsedImages = (json['images'] as List).map((e) => e.toString()).toList();
+    }
+
+    final mainImg = parsedImages.isNotEmpty
+        ? parsedImages.first
+        : (json['main_image'] as String? ?? '');
+
     return FieldModel(
       id: json['id'] as String,
       name: json['name'] as String? ?? '',
@@ -53,14 +79,20 @@ class FieldModel extends Equatable {
       oldPrice: (json['old_price'] as num?)?.toDouble(),
       rating: (json['rating'] as num?)?.toDouble() ?? 5.0,
       reviewsCount: json['reviews_count'] as int? ?? 0,
-      distance: json['distance'] as String? ?? '1.0 كم',
+      distance: json['distance'] as String? ?? '1.2 كم',
       fieldType: json['field_type'] as String? ?? 'خماسي',
       grassType: json['grass_type'] as String? ?? 'عشب صناعي',
       isIndoor: json['is_indoor'] as bool? ?? false,
-      mainImage: json['main_image'] as String? ?? '',
-      images: (json['images'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
+      mainImage: mainImg,
+      images: parsedImages,
       facilities: (json['facilities'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
       isFavorite: json['is_favorite'] as bool? ?? false,
+      isPopular: json['is_popular'] as bool? ?? false,
+      isRecommended: json['is_recommended'] as bool? ?? false,
+      isAvailableToday: json['is_available_today'] as bool? ?? true,
+      openingTime: json['opening_time'] as String?,
+      closingTime: json['closing_time'] as String?,
+      phone: json['phone'] as String?,
     );
   }
 
@@ -84,6 +116,12 @@ class FieldModel extends Equatable {
       'images': images,
       'facilities': facilities,
       'is_favorite': isFavorite,
+      'is_popular': isPopular,
+      'is_recommended': isRecommended,
+      'is_available_today': isAvailableToday,
+      'opening_time': openingTime,
+      'closing_time': closingTime,
+      'phone': phone,
     };
   }
 
@@ -106,6 +144,12 @@ class FieldModel extends Equatable {
     List<String>? images,
     List<String>? facilities,
     bool? isFavorite,
+    bool? isPopular,
+    bool? isRecommended,
+    bool? isAvailableToday,
+    String? openingTime,
+    String? closingTime,
+    String? phone,
   }) {
     return FieldModel(
       id: id ?? this.id,
@@ -126,6 +170,12 @@ class FieldModel extends Equatable {
       images: images ?? this.images,
       facilities: facilities ?? this.facilities,
       isFavorite: isFavorite ?? this.isFavorite,
+      isPopular: isPopular ?? this.isPopular,
+      isRecommended: isRecommended ?? this.isRecommended,
+      isAvailableToday: isAvailableToday ?? this.isAvailableToday,
+      openingTime: openingTime ?? this.openingTime,
+      closingTime: closingTime ?? this.closingTime,
+      phone: phone ?? this.phone,
     );
   }
 
@@ -149,5 +199,11 @@ class FieldModel extends Equatable {
         images,
         facilities,
         isFavorite,
+        isPopular,
+        isRecommended,
+        isAvailableToday,
+        openingTime,
+        closingTime,
+        phone,
       ];
 }
