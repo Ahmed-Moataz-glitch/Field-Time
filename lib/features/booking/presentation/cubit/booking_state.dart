@@ -47,3 +47,12 @@ class BookingError extends BookingState {
   @override
   List<Object?> get props => [message];
 }
+
+class BookingDuplicateError extends BookingState {
+  final String message;
+
+  const BookingDuplicateError([this.message = 'هذا الموعد محجوز بالفعل! يرجى اختيار موعد آخر.']);
+
+  @override
+  List<Object?> get props => [message];
+}

@@ -24,3 +24,7 @@ class AuthFailure extends Failure {
 class NetworkFailure extends Failure {
   const NetworkFailure([super.message = 'تأكد من الاتصال بالإنترنت']);
 }
+
+class DuplicateBookingFailure extends Failure {
+  const DuplicateBookingFailure([super.message = 'هذا الموعد محجوز بالفعل! يرجى اختيار موعد آخر.']);
+}

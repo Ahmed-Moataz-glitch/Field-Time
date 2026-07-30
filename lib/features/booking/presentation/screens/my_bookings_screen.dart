@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:go_router/go_router.dart';
 import 'package:field_time/core/constants/app_colors.dart';
 import 'package:field_time/core/constants/app_typography.dart';
 import 'package:field_time/features/booking/data/models/booking_model.dart';
@@ -22,6 +23,46 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
   void initState() {
     super.initState();
     context.read<BookingCubit>().loadBookings();
+  }
+
+  void _showCancelConfirmationDialog(BuildContext context, BookingModel booking) {
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
+        title: Text(
+          'تأكيد إلغاء الحجز',
+          style: AppTypography.title(color: AppColors.error).copyWith(fontWeight: FontWeight.bold),
+        ),
+        content: Text(
+          'هل أنت تأكد من رغبتك في إلغاء حجز ملعب (${booking.fieldName}) بتاريخ ${booking.date}؟',
+          style: AppTypography.body(color: AppColors.textPrimaryLight),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx),
+            child: const Text('تراجع'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(dialogCtx);
+              context.read<BookingCubit>().cancelBooking(booking.id);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('تم إلغاء الحجز بنجاح'),
+                  backgroundColor: AppColors.error,
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+            ),
+            child: const Text('نعم، إلغاء الحجز', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -99,11 +140,18 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
 
                     if (filteredBookings.isEmpty) {
                       return Center(
-                        child: Text(
-                          'لا توجد حجوزات في هذا القسم',
-                          style: AppTypography.body(
-                            color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
-                          ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.calendar_today_outlined, size: 48.sp, color: AppColors.iconGrey),
+                            SizedBox(height: 12.h),
+                            Text(
+                              'لا توجد حجوزات في هذا القسم',
+                              style: AppTypography.body(
+                                color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                              ),
+                            ),
+                          ],
                         ),
                       );
                     }
@@ -113,7 +161,7 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
                       itemCount: filteredBookings.length,
                       itemBuilder: (context, index) {
                         final booking = filteredBookings[index];
-                        return _buildBookingItem(booking, isDark);
+                        return _buildBookingItem(context, booking, isDark);
                       },
                     );
                   } else if (state is BookingError) {
@@ -129,7 +177,18 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
     );
   }
 
-  Widget _buildBookingItem(BookingModel booking, bool isDark) {
+  Widget _buildBookingItem(BuildContext context, BookingModel booking, bool isDark) {
+    Color statusColor = AppColors.primary;
+    String statusLabel = 'مؤكد';
+
+    if (booking.status == 'cancelled') {
+      statusColor = AppColors.error;
+      statusLabel = 'ملغى';
+    } else if (booking.status == 'completed') {
+      statusColor = Colors.blue;
+      statusLabel = 'مكتمل';
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -179,21 +238,25 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
-                              booking.fieldName,
-                              style: AppTypography.title(
-                                color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
-                              ).copyWith(fontWeight: FontWeight.bold),
+                            Expanded(
+                              child: Text(
+                                booking.fieldName,
+                                style: AppTypography.title(
+                                  color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                                ).copyWith(fontWeight: FontWeight.bold),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
                             Container(
                               padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
                               decoration: BoxDecoration(
-                                color: AppColors.primary.withValues(alpha: 0.15),
+                                color: statusColor.withValues(alpha: 0.15),
                                 borderRadius: BorderRadius.circular(10.r),
                               ),
                               child: Text(
-                                'مؤكد',
-                                style: AppTypography.small(color: AppColors.primary).copyWith(
+                                statusLabel,
+                                style: AppTypography.small(color: statusColor).copyWith(
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -206,6 +269,8 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
                           style: AppTypography.small(
                             color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                         SizedBox(height: 8.h),
                         Row(
@@ -232,49 +297,50 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
                   ),
                 ],
               ),
-              SizedBox(height: 16.h),
-              // Action Buttons
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => context.read<BookingCubit>().cancelBooking(booking.id),
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: AppColors.error, width: 1.5),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14.r),
+              if (booking.status == 'confirmed') ...[
+                SizedBox(height: 16.h),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => _showCancelConfirmationDialog(context, booking),
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: AppColors.error, width: 1.5),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14.r),
+                          ),
+                          padding: EdgeInsets.symmetric(vertical: 10.h),
                         ),
-                        padding: EdgeInsets.symmetric(vertical: 10.h),
-                      ),
-                      child: Text(
-                        'إلغاء الحجز',
-                        style: AppTypography.caption(color: AppColors.error).copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: 12.w),
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () {},
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: AppColors.primary, width: 1.5),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14.r),
-                        ),
-                        padding: EdgeInsets.symmetric(vertical: 10.h),
-                      ),
-                      child: Text(
-                        'تفاصيل',
-                        style: AppTypography.caption(color: AppColors.primary).copyWith(
-                          fontWeight: FontWeight.bold,
+                        child: Text(
+                          'إلغاء الحجز',
+                          style: AppTypography.caption(color: AppColors.error).copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ],
-              ),
+                    SizedBox(width: 12.w),
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => context.push('/field-details/${booking.fieldId}'),
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: AppColors.primary, width: 1.5),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14.r),
+                          ),
+                          padding: EdgeInsets.symmetric(vertical: 10.h),
+                        ),
+                        child: Text(
+                          'تفاصيل الملعب',
+                          style: AppTypography.caption(color: AppColors.primary).copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ],
           ),
         ),
