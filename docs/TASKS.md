@@ -52,14 +52,14 @@ In Progress
 
 # Field Details
 
-- [ ] Image Slider
-- [ ] Rating
-- [ ] Description
-- [ ] Google Map
-- [ ] Facilities
-- [ ] Reviews
-- [ ] Available Hours
-- [ ] Book Button
+- [x] Image Slider
+- [x] Rating
+- [x] Description
+- [x] Google Map
+- [x] Facilities
+- [x] Reviews
+- [x] Available Hours
+- [x] Book Button
 
 ---
 
