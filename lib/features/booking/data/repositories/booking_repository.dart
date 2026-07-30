@@ -1,4 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:field_time/core/errors/failures.dart';
 import 'package:field_time/features/booking/data/models/booking_model.dart';
 
 class BookingRepository {
@@ -11,7 +12,7 @@ class BookingRepository {
     const BookingModel(
       id: 'booking-1',
       fieldId: 'field-1',
-      fieldName: 'Arena Sport',
+      fieldName: 'أرينا سبورت (Arena Sport)',
       fieldAddress: 'مدينة نصر - شارع الطيران',
       fieldImage: 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&q=80&w=800',
       date: 'الجمعة 24 مايو 2024',
@@ -24,7 +25,7 @@ class BookingRepository {
     const BookingModel(
       id: 'booking-2',
       fieldId: 'field-2',
-      fieldName: 'Goal Makers',
+      fieldName: 'جول ميكرز (Goal Makers)',
       fieldAddress: 'التجمع الخامس - شارع التسعين',
       fieldImage: 'https://images.unsplash.com/photo-1529900748604-07564a03e7a6?auto=format&fit=crop&q=80&w=800',
       date: 'السبت 25 مايو 2024',
@@ -38,12 +39,41 @@ class BookingRepository {
 
   Future<List<BookingModel>> getBookings() async {
     try {
-      final response = await _supabase.from('bookings').select('*, football_fields(*)');
+      final response = await _supabase.from('bookings').select('*');
       if ((response as List).isNotEmpty) {
         return response.map((item) => BookingModel.fromJson(item)).toList();
       }
     } catch (_) {}
-    return _mockBookings;
+    return List.from(_mockBookings);
+  }
+
+  Future<bool> checkIsSlotAvailable({
+    required String fieldId,
+    required String date,
+    required String startTime,
+  }) async {
+    // 1. Check local active mock bookings
+    final isLocallyBooked = _mockBookings.any(
+      (b) => b.fieldId == fieldId && b.date == date && b.startTime == startTime && b.status != 'cancelled',
+    );
+    if (isLocallyBooked) return false;
+
+    // 2. Check Supabase DB bookings table
+    try {
+      final response = await _supabase
+          .from('bookings')
+          .select()
+          .eq('field_id', fieldId)
+          .eq('booking_date', date)
+          .eq('start_time', startTime)
+          .neq('status', 'cancelled');
+
+      if ((response as List).isNotEmpty) {
+        return false;
+      }
+    } catch (_) {}
+
+    return true;
   }
 
   Future<BookingModel> createBooking({
@@ -56,10 +86,22 @@ class BookingRepository {
     required String endTime,
     required double price,
   }) async {
-    final bookingCode = '#FT-${DateTime.now().year}-${DateTime.now().month.toString().padLeft(2, '0')}${DateTime.now().day.toString().padLeft(2, '0')}-${(1000 + DateTime.now().millisecond % 9000)}';
-    
+    // Prevent Duplicate Booking Check
+    final isAvailable = await checkIsSlotAvailable(
+      fieldId: fieldId,
+      date: date,
+      startTime: startTime,
+    );
+
+    if (!isAvailable) {
+      throw const DuplicateBookingFailure('هذا الموعد محجوز بالفعل! يرجى اختيار موعد آخر.');
+    }
+
+    final now = DateTime.now();
+    final bookingCode = '#FT-${now.year}-${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}-${(1000 + now.millisecond % 9000)}';
+
     final newBooking = BookingModel(
-      id: 'booking-${DateTime.now().millisecondsSinceEpoch}',
+      id: 'booking-${now.millisecondsSinceEpoch}',
       fieldId: fieldId,
       fieldName: fieldName,
       fieldAddress: fieldAddress,
@@ -68,7 +110,7 @@ class BookingRepository {
       startTime: startTime,
       endTime: endTime,
       price: price,
-      status: 'confirmed',
+      status: 'confirmed', // Instant booking confirmed state
       bookingCode: bookingCode,
     );
 
@@ -84,6 +126,7 @@ class BookingRepository {
     try {
       await _supabase.from('bookings').update({'status': 'cancelled'}).eq('id', bookingId);
     } catch (_) {}
+
     final index = _mockBookings.indexWhere((b) => b.id == bookingId);
     if (index != -1) {
       _mockBookings[index] = _mockBookings[index].copyWith(status: 'cancelled');

@@ -65,12 +65,12 @@ In Progress
 
 # Booking
 
-- [ ] Date Picker
-- [ ] Time Picker
-- [ ] Booking Summary
-- [ ] Instant Booking
-- [ ] Prevent Duplicate Booking
-- [ ] Booking Success
+- [x] Date Picker
+- [x] Time Picker
+- [x] Booking Summary
+- [x] Instant Booking
+- [x] Prevent Duplicate Booking
+- [x] Booking Success
 
 ---
 

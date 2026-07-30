@@ -4,6 +4,7 @@ import 'package:field_time/features/auth/presentation/screens/forgot_password_sc
 import 'package:field_time/features/auth/presentation/screens/login_screen.dart';
 import 'package:field_time/features/auth/presentation/screens/register_screen.dart';
 import 'package:field_time/features/auth/presentation/screens/welcome_screen.dart';
+import 'package:field_time/features/booking/presentation/screens/booking_screen.dart';
 import 'package:field_time/features/booking/presentation/screens/booking_success_screen.dart';
 import 'package:field_time/features/field_details/presentation/screens/field_details_screen.dart';
 import 'package:field_time/features/home/presentation/screens/main_layout_screen.dart';
@@ -17,6 +18,7 @@ abstract class AppRouter {
   static const String forgotPassword = '/forgot-password';
   static const String main = '/main';
   static const String fieldDetails = '/field-details/:id';
+  static const String booking = '/booking';
   static const String bookingSuccess = '/booking-success';
 
   static final router = GoRouter(
@@ -54,6 +56,21 @@ abstract class AppRouter {
         builder: (context, state) {
           final id = state.pathParameters['id'] ?? 'field-1';
           return FieldDetailsScreen(fieldId: id);
+        },
+      ),
+      GoRoute(
+        path: booking,
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>? ?? {};
+          return BookingScreen(
+            fieldId: extra['fieldId'] as String? ?? 'field-1',
+            fieldName: extra['fieldName'] as String? ?? 'أرينا سبورت (Arena Sport)',
+            fieldAddress: extra['fieldAddress'] as String? ?? 'مدينة نصر - شارع الطيران',
+            fieldImage: extra['fieldImage'] as String? ?? 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&q=80&w=800',
+            price: (extra['price'] as num?)?.toDouble() ?? 350.0,
+            initialDate: extra['initialDate'] as String?,
+            initialTimeSlot: extra['initialTimeSlot'] as String?,
+          );
         },
       ),
       GoRoute(

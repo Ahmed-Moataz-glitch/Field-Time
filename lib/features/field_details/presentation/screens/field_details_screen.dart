@@ -8,7 +8,6 @@ import 'package:field_time/core/constants/app_colors.dart';
 import 'package:field_time/core/constants/app_typography.dart';
 import 'package:field_time/core/widgets/primary_button.dart';
 import 'package:field_time/core/widgets/rating_badge.dart';
-import 'package:field_time/features/booking/presentation/cubit/booking_cubit.dart';
 import 'package:field_time/features/field_details/data/models/review_model.dart';
 import 'package:field_time/features/field_details/presentation/cubit/field_details_cubit.dart';
 import 'package:field_time/features/field_details/presentation/cubit/field_details_state.dart';
@@ -1281,19 +1280,19 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
               PrimaryButton(
                 title: 'احجز الآن',
                 width: 170.w,
-                onPressed: () async {
-                  final booking = await context.read<BookingCubit>().createBooking(
-                        fieldId: field.id,
-                        fieldName: field.name,
-                        fieldAddress: field.address,
-                        fieldImage: field.mainImage,
-                        date: state.selectedDate,
-                        timeSlot: '$selectedSlot - ${int.parse(selectedSlot.split(':')[0]) + 1}:00',
-                        price: field.pricePerHour,
-                      );
-                  if (booking != null && context.mounted) {
-                    context.push('/booking-success');
-                  }
+                onPressed: () {
+                  context.push(
+                    '/booking',
+                    extra: {
+                      'fieldId': field.id,
+                      'fieldName': field.name,
+                      'fieldAddress': field.address,
+                      'fieldImage': field.mainImage,
+                      'price': field.pricePerHour,
+                      'initialDate': state.selectedDate,
+                      'initialTimeSlot': selectedSlot,
+                    },
+                  );
                 },
               ),
             ],
