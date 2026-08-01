@@ -13,6 +13,7 @@ import 'package:field_time/features/field_details/presentation/cubit/field_detai
 import 'package:field_time/features/field_details/presentation/cubit/field_details_state.dart';
 import 'package:field_time/features/home/data/models/field_model.dart';
 import 'package:field_time/features/home/data/repositories/field_repository.dart';
+import 'package:field_time/features/reviews/presentation/widgets/add_edit_review_bottom_sheet.dart';
 
 class FieldDetailsScreen extends StatelessWidget {
   final String fieldId;
@@ -964,16 +965,51 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              'التقييمات والآراء',
-              style: AppTypography.title(
-                color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
-              ).copyWith(fontWeight: FontWeight.bold),
+            Row(
+              children: [
+                Text(
+                  'التقييمات والآراء',
+                  style: AppTypography.title(
+                    color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                  ).copyWith(fontWeight: FontWeight.bold),
+                ),
+                SizedBox(width: 8.w),
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.h),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(10.r),
+                  ),
+                  child: Text(
+                    '${reviews.length}',
+                    style: AppTypography.small(color: AppColors.primary).copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
             ),
-            Text(
-              '${reviews.length} تقييم',
-              style: AppTypography.caption(color: AppColors.primary).copyWith(
-                fontWeight: FontWeight.bold,
+            InkWell(
+              onTap: () => _openAddEditReviewSheet(context, field),
+              borderRadius: BorderRadius.circular(20.r),
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+                decoration: BoxDecoration(
+                  color: AppColors.primary,
+                  borderRadius: BorderRadius.circular(20.r),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.rate_review_outlined, size: 14.sp, color: Colors.white),
+                    SizedBox(width: 4.w),
+                    Text(
+                      'أضف تقييمك',
+                      style: AppTypography.small(color: Colors.white).copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
@@ -1035,74 +1071,201 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
         SizedBox(height: 16.h),
 
         // Reviews List
-        ListView.separated(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: reviews.length,
-          separatorBuilder: (context, index) => SizedBox(height: 12.h),
-          itemBuilder: (context, index) {
-            final rev = reviews[index];
-            return Container(
-              padding: EdgeInsets.all(14.w),
-              decoration: BoxDecoration(
-                color: isDark ? AppColors.cardDark : AppColors.cardLight,
-                borderRadius: BorderRadius.circular(14.r),
-                border: Border.all(
-                  color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05),
+        if (reviews.isEmpty)
+          Padding(
+            padding: EdgeInsets.symmetric(vertical: 20.h),
+            child: Center(
+              child: Text(
+                'لا توجد تقييمات حتى الآن. كن أول من يقيّم هذا الملعب!',
+                style: AppTypography.body(
+                  color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
                 ),
+                textAlign: TextAlign.center,
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 18.r,
-                        backgroundImage: rev.userAvatar != null ? NetworkImage(rev.userAvatar!) : null,
-                        backgroundColor: AppColors.primary.withValues(alpha: 0.2),
-                        child: rev.userAvatar == null
-                            ? Text(
-                                rev.userName[0],
-                                style: AppTypography.body(color: AppColors.primary).copyWith(fontWeight: FontWeight.bold),
-                              )
-                            : null,
-                      ),
-                      SizedBox(width: 10.w),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              rev.userName,
-                              style: AppTypography.body(
-                                color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
-                              ).copyWith(fontWeight: FontWeight.bold),
+            ),
+          )
+        else
+          ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: reviews.length,
+            separatorBuilder: (context, index) => SizedBox(height: 12.h),
+            itemBuilder: (context, index) {
+              final rev = reviews[index];
+              return Container(
+                padding: EdgeInsets.all(14.w),
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.cardDark : AppColors.cardLight,
+                  borderRadius: BorderRadius.circular(14.r),
+                  border: Border.all(
+                    color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 18.r,
+                          backgroundImage: rev.userAvatar != null ? NetworkImage(rev.userAvatar!) : null,
+                          backgroundColor: AppColors.primary.withValues(alpha: 0.2),
+                          child: rev.userAvatar == null
+                              ? Text(
+                                  rev.userName.isNotEmpty ? rev.userName[0] : 'م',
+                                  style: AppTypography.body(color: AppColors.primary).copyWith(fontWeight: FontWeight.bold),
+                                )
+                              : null,
+                        ),
+                        SizedBox(width: 10.w),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                rev.userName,
+                                style: AppTypography.body(
+                                  color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                                ).copyWith(fontWeight: FontWeight.bold),
+                              ),
+                              Text(
+                                rev.createdAt,
+                                style: AppTypography.small(
+                                  color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        RatingBadge(rating: rev.rating),
+                        PopupMenuButton<String>(
+                          icon: Icon(
+                            Icons.more_vert_rounded,
+                            size: 18.sp,
+                            color: isDark ? AppColors.textSecondaryDark : AppColors.iconGrey,
+                          ),
+                          onSelected: (val) {
+                            if (val == 'edit') {
+                              _openAddEditReviewSheet(context, field, rev);
+                            } else if (val == 'delete') {
+                              _confirmDeleteReview(context, rev.id);
+                            }
+                          },
+                          itemBuilder: (context) => [
+                            PopupMenuItem(
+                              value: 'edit',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.edit_outlined, size: 16.sp, color: AppColors.primary),
+                                  SizedBox(width: 8.w),
+                                  const Text('تعديل التقييم'),
+                                ],
+                              ),
                             ),
-                            Text(
-                              rev.createdAt,
-                              style: AppTypography.small(
-                                color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                            PopupMenuItem(
+                              value: 'delete',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.delete_outline, size: 16.sp, color: AppColors.error),
+                                  SizedBox(width: 8.w),
+                                  const Text('حذف التقييم', style: TextStyle(color: AppColors.error)),
+                                ],
                               ),
                             ),
                           ],
                         ),
-                      ),
-                      RatingBadge(rating: rev.rating),
-                    ],
-                  ),
-                  SizedBox(height: 8.h),
-                  Text(
-                    rev.comment,
-                    style: AppTypography.body(
-                      color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                      ],
                     ),
-                  ),
-                ],
-              ),
-            );
-          },
-        ),
+                    SizedBox(height: 8.h),
+                    Text(
+                      rev.comment,
+                      style: AppTypography.body(
+                        color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
       ],
+    );
+  }
+
+  void _openAddEditReviewSheet(BuildContext context, FieldModel field, [ReviewModel? existingReview]) {
+    final cubit = context.read<FieldDetailsCubit>();
+    final messenger = ScaffoldMessenger.of(context);
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Theme.of(context).brightness == Brightness.dark ? AppColors.cardDark : Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
+      ),
+      builder: (ctx) {
+        return AddEditReviewBottomSheet(
+          fieldId: field.id,
+          existingReview: existingReview,
+          onSubmit: (rating, comment) async {
+            bool success;
+            if (existingReview != null) {
+              success = await cubit.editReview(
+                reviewId: existingReview.id,
+                rating: rating,
+                comment: comment,
+              );
+            } else {
+              success = await cubit.addReview(
+                rating: rating,
+                comment: comment,
+              );
+            }
+
+            if (mounted && success) {
+              messenger.showSnackBar(
+                SnackBar(
+                  content: Text(existingReview != null ? 'تم تعديل تقييمك بنجاح!' : 'تم إضافة تقييمك بنجاح!'),
+                  backgroundColor: AppColors.primary,
+                ),
+              );
+            }
+          },
+        );
+      },
+    );
+  }
+
+  void _confirmDeleteReview(BuildContext context, String reviewId) {
+    final cubit = context.read<FieldDetailsCubit>();
+    final messenger = ScaffoldMessenger.of(context);
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('حذف التقييم'),
+        content: const Text('هل أنت تأكد من رغبتك في حذف هذا التقييم؟'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('إلغاء'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
+            onPressed: () async {
+              Navigator.of(ctx).pop();
+              final success = await cubit.deleteReview(reviewId);
+              if (mounted && success) {
+                messenger.showSnackBar(
+                  const SnackBar(
+                    content: Text('تم حذف التقييم بنجاح'),
+                    backgroundColor: AppColors.error,
+                  ),
+                );
+              }
+            },
+            child: const Text('حذف', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
     );
   }
 

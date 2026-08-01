@@ -84,9 +84,9 @@ In Progress
 
 # Reviews
 
-- [ ] Add Review
-- [ ] Edit Review
-- [ ] Delete Review
+- [x] Add Review
+- [x] Edit Review
+- [x] Delete Review
 
 ---
 

@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:field_time/features/field_details/data/models/review_model.dart';
 import 'package:field_time/features/field_details/presentation/cubit/field_details_state.dart';
 import 'package:field_time/features/home/data/repositories/field_repository.dart';
 
@@ -76,5 +77,93 @@ class FieldDetailsCubit extends Cubit<FieldDetailsState> {
         ));
       } catch (_) {}
     }
+  }
+
+  Future<bool> addReview({required double rating, required String comment}) async {
+    if (state is FieldDetailsLoaded) {
+      final currentState = state as FieldDetailsLoaded;
+      try {
+        await _repository.addReview(
+          fieldId: currentState.field.id,
+          rating: rating,
+          comment: comment,
+        );
+
+        final updatedReviews = await _repository.getReviewsByFieldId(currentState.field.id);
+        final newRating = _calculateAvgRating(updatedReviews);
+
+        emit(currentState.copyWith(
+          reviews: updatedReviews,
+          field: currentState.field.copyWith(
+            rating: newRating,
+            reviewsCount: updatedReviews.length,
+          ),
+        ));
+        return true;
+      } catch (_) {}
+    }
+    return false;
+  }
+
+  Future<bool> editReview({
+    required String reviewId,
+    required double rating,
+    required String comment,
+  }) async {
+    if (state is FieldDetailsLoaded) {
+      final currentState = state as FieldDetailsLoaded;
+      try {
+        await _repository.editReview(
+          reviewId: reviewId,
+          fieldId: currentState.field.id,
+          rating: rating,
+          comment: comment,
+        );
+
+        final updatedReviews = await _repository.getReviewsByFieldId(currentState.field.id);
+        final newRating = _calculateAvgRating(updatedReviews);
+
+        emit(currentState.copyWith(
+          reviews: updatedReviews,
+          field: currentState.field.copyWith(
+            rating: newRating,
+            reviewsCount: updatedReviews.length,
+          ),
+        ));
+        return true;
+      } catch (_) {}
+    }
+    return false;
+  }
+
+  Future<bool> deleteReview(String reviewId) async {
+    if (state is FieldDetailsLoaded) {
+      final currentState = state as FieldDetailsLoaded;
+      try {
+        await _repository.deleteReview(
+          reviewId: reviewId,
+          fieldId: currentState.field.id,
+        );
+
+        final updatedReviews = await _repository.getReviewsByFieldId(currentState.field.id);
+        final newRating = _calculateAvgRating(updatedReviews);
+
+        emit(currentState.copyWith(
+          reviews: updatedReviews,
+          field: currentState.field.copyWith(
+            rating: newRating,
+            reviewsCount: updatedReviews.length,
+          ),
+        ));
+        return true;
+      } catch (_) {}
+    }
+    return false;
+  }
+
+  double _calculateAvgRating(List<ReviewModel> reviews) {
+    if (reviews.isEmpty) return 5.0;
+    final sum = reviews.fold<double>(0, (prev, r) => prev + r.rating);
+    return double.parse((sum / reviews.length).toStringAsFixed(1));
   }
 }
