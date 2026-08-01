@@ -47,8 +47,7 @@ class HomeCubit extends Cubit<HomeState> {
       final recommendedFields = results[3] as List<FieldModel>;
       final filteredFields = results[4] as List<FieldModel>;
 
-      final initialFavs = currentLoaded?.favoriteFieldIds ??
-          popularFields.where((f) => f.isFavorite).map((f) => f.id).toSet();
+      final favIds = await _repository.getFavoriteFieldIds();
 
       emit(HomeLoaded(
         offers: offers.cast(),
@@ -60,7 +59,7 @@ class HomeCubit extends Cubit<HomeState> {
         searchQuery: searchQuery,
         filterParams: filterParams,
         selectedCity: selectedCity,
-        favoriteFieldIds: Set.from(initialFavs),
+        favoriteFieldIds: Set.from(favIds),
         isRefreshing: false,
       ));
     } catch (e) {
@@ -153,18 +152,17 @@ class HomeCubit extends Cubit<HomeState> {
     }
   }
 
-  void toggleFavorite(String fieldId) {
+  Future<void> toggleFavorite(String fieldId) async {
     if (state is HomeLoaded) {
       final currentState = state as HomeLoaded;
+      final isFavNow = await _repository.toggleFavorite(fieldId);
       final favs = Set<String>.from(currentState.favoriteFieldIds);
-      if (favs.contains(fieldId)) {
-        favs.remove(fieldId);
-      } else {
+      if (isFavNow) {
         favs.add(fieldId);
+      } else {
+        favs.remove(fieldId);
       }
       emit(currentState.copyWith(favoriteFieldIds: favs));
-
-      _repository.toggleFavorite(fieldId, 'user-id-placeholder');
     }
   }
 }

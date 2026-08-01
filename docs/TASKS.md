@@ -76,9 +76,9 @@ In Progress
 
 # Favorites
 
-- [ ] Add Favorite
-- [ ] Remove Favorite
-- [ ] Favorite Screen
+- [x] Add Favorite
+- [x] Remove Favorite
+- [x] Favorite Screen
 
 ---
 

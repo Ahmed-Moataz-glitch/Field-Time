@@ -183,7 +183,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                 return PopularFieldCard(
                                   field: field,
                                   isFavorite: isFav,
-                                  onTap: () => context.push('/field-details/${field.id}'),
+                                  onTap: () => context.push('/field-details/${field.id}').then((_) {
+                                    // Refresh home data when returning from field details
+                                    context.read<HomeCubit>().loadHomeData();
+                                  }),
                                   onFavoriteToggle: () {
                                     context.read<HomeCubit>().toggleFavorite(field.id);
                                   },

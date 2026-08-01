@@ -176,6 +176,25 @@ class FieldRepository {
     ),
   ];
 
+  static final Set<String> _favoriteFieldIds = {'field-1', 'field-3'};
+
+  Future<Set<String>> getFavoriteFieldIds() async {
+    final currentUser = _supabase.auth.currentUser;
+    if (currentUser != null) {
+      try {
+        final response = await _supabase
+            .from('favorites')
+            .select('field_id')
+            .eq('user_id', currentUser.id);
+        if ((response as List).isNotEmpty) {
+          final ids = (response as List).map((e) => e['field_id'] as String).toSet();
+          _favoriteFieldIds.addAll(ids);
+        }
+      } catch (_) {}
+    }
+    return Set.from(_favoriteFieldIds);
+  }
+
   Future<List<OfferModel>> getOffers() async {
     try {
       final response = await _supabase.from('offers').select();
@@ -191,14 +210,29 @@ class FieldRepository {
     String? searchQuery,
     FieldFilterParams? filterParams,
   }) async {
+    List<FieldModel> rawFields;
     try {
       final response = await _supabase.from('football_fields').select('*, field_images(*)');
       if ((response as List).isNotEmpty) {
-        final fields = response.map((item) => FieldModel.fromJson(item)).toList();
-        return filterFieldList(fields, category: category, searchQuery: searchQuery, filterParams: filterParams);
+        rawFields = response.map((item) => FieldModel.fromJson(item)).toList();
+      } else {
+        rawFields = List.from(_mockFields);
       }
-    } catch (_) {}
-    return filterFieldList(_mockFields, category: category, searchQuery: searchQuery, filterParams: filterParams);
+    } catch (_) {
+      rawFields = List.from(_mockFields);
+    }
+
+    final updatedFields = rawFields.map((f) {
+      return f.copyWith(isFavorite: _favoriteFieldIds.contains(f.id));
+    }).toList();
+
+    return filterFieldList(updatedFields, category: category, searchQuery: searchQuery, filterParams: filterParams);
+  }
+
+  Future<List<FieldModel>> getFavoriteFields() async {
+    final favIds = await getFavoriteFieldIds();
+    final allFields = await getFields();
+    return allFields.where((f) => favIds.contains(f.id)).map((f) => f.copyWith(isFavorite: true)).toList();
   }
 
   Future<List<FieldModel>> getPopularFields() async {
@@ -279,42 +313,54 @@ class FieldRepository {
   }
 
   Future<FieldModel?> getFieldById(String id) async {
+    FieldModel? field;
     try {
       final response = await _supabase
           .from('football_fields')
           .select('*, field_images(*)')
           .eq('id', id)
           .single();
-      return FieldModel.fromJson(response);
+      field = FieldModel.fromJson(response);
     } catch (_) {}
-    try {
-      return _mockFields.firstWhere((f) => f.id == id);
-    } catch (_) {
-      return _mockFields.first;
+    if (field == null) {
+      try {
+        field = _mockFields.firstWhere((f) => f.id == id);
+      } catch (_) {
+        field = _mockFields.first;
+      }
     }
+    return field.copyWith(isFavorite: _favoriteFieldIds.contains(field.id));
   }
 
-  Future<bool> toggleFavorite(String fieldId, String userId) async {
+  Future<bool> toggleFavorite(String fieldId, [String? userId]) async {
+    final effectiveUserId = userId ?? _supabase.auth.currentUser?.id ?? 'user-id-placeholder';
+    final isCurrentlyFav = _favoriteFieldIds.contains(fieldId);
+
+    if (isCurrentlyFav) {
+      _favoriteFieldIds.remove(fieldId);
+    } else {
+      _favoriteFieldIds.add(fieldId);
+    }
+    final isFavNow = !isCurrentlyFav;
+
     try {
       final response = await _supabase
           .from('favorites')
           .select()
-          .eq('user_id', userId)
+          .eq('user_id', effectiveUserId)
           .eq('field_id', fieldId);
 
       if ((response as List).isNotEmpty) {
-        await _supabase.from('favorites').delete().eq('user_id', userId).eq('field_id', fieldId);
-        return false;
+        await _supabase.from('favorites').delete().eq('user_id', effectiveUserId).eq('field_id', fieldId);
       } else {
         await _supabase.from('favorites').insert({
-          'user_id': userId,
+          'user_id': effectiveUserId,
           'field_id': fieldId,
         });
-        return true;
       }
-    } catch (_) {
-      return true;
-    }
+    } catch (_) {}
+
+    return isFavNow;
   }
 
   Future<List<ReviewModel>> getReviewsByFieldId(String fieldId) async {
