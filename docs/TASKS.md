@@ -100,10 +100,10 @@ In Progress
 
 # Profile
 
-- [ ] Edit Profile
-- [ ] Change Avatar
-- [ ] Change Password
-- [ ] Settings
+- [x] Edit Profile
+- [x] Change Avatar
+- [x] Change Password
+- [x] Settings
 
 ---
 

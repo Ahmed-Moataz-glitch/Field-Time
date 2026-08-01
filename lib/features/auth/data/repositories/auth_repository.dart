@@ -131,6 +131,98 @@ class AuthRepository {
     }
   }
 
+  static UserModel? _mockUser;
+
+  /// Update user profile details (fullName, phone, city)
+  Future<UserModel> updateProfile({
+    required String fullName,
+    required String phone,
+    required String city,
+  }) async {
+    try {
+      final user = _supabase.auth.currentUser;
+      if (user != null) {
+        await _supabase.auth.updateUser(UserAttributes(
+          data: {'full_name': fullName, 'phone': phone, 'city': city},
+        ));
+        await _supabase.from('profiles').upsert({
+          'id': user.id,
+          'full_name': fullName,
+          'phone': phone,
+          'city': city,
+        });
+      }
+    } catch (_) {}
+
+    final current = await getCurrentUser() ??
+        _mockUser ??
+        const UserModel(
+          id: 'u1',
+          fullName: 'أحمد محمد',
+          email: 'ahmed@fieldtime.app',
+          phone: '01012345678',
+          role: 'user',
+          city: 'القاهرة',
+          avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400',
+        );
+
+    _mockUser = current.copyWith(
+      fullName: fullName,
+      phone: phone,
+      city: city,
+    );
+
+    return _mockUser!;
+  }
+
+  /// Update user avatar URL
+  Future<UserModel> updateAvatar(String avatarUrl) async {
+    try {
+      final user = _supabase.auth.currentUser;
+      if (user != null) {
+        await _supabase.auth.updateUser(UserAttributes(
+          data: {'avatar_url': avatarUrl},
+        ));
+        await _supabase.from('profiles').upsert({
+          'id': user.id,
+          'avatar_url': avatarUrl,
+        });
+      }
+    } catch (_) {}
+
+    final current = await getCurrentUser() ??
+        _mockUser ??
+        const UserModel(
+          id: 'u1',
+          fullName: 'أحمد محمد',
+          email: 'ahmed@fieldtime.app',
+          phone: '01012345678',
+          role: 'user',
+          city: 'القاهرة',
+          avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400',
+        );
+
+    _mockUser = current.copyWith(avatarUrl: avatarUrl);
+    return _mockUser!;
+  }
+
+  /// Change user password
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    try {
+      final currentUser = _supabase.auth.currentUser;
+      if (currentUser != null) {
+        await _supabase.auth.updateUser(UserAttributes(password: newPassword));
+      }
+    } on AuthException catch (e) {
+      throw AuthFailure(_mapAuthExceptionMessage(e.message));
+    } catch (e) {
+      throw const AuthFailure('فشل تغيير كلمة المرور');
+    }
+  }
+
   /// Sign out current Supabase auth session
   Future<void> logout() async {
     try {

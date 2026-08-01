@@ -8,6 +8,10 @@ import 'package:field_time/core/constants/app_typography.dart';
 import 'package:field_time/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:field_time/features/profile/presentation/cubit/profile_cubit.dart';
 import 'package:field_time/features/profile/presentation/cubit/profile_state.dart';
+import 'package:field_time/features/profile/presentation/widgets/change_avatar_sheet.dart';
+import 'package:field_time/features/profile/presentation/widgets/change_password_sheet.dart';
+import 'package:field_time/features/profile/presentation/widgets/edit_profile_sheet.dart';
+import 'package:field_time/features/profile/presentation/widgets/settings_sheet.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -23,6 +27,121 @@ class _ProfileScreenState extends State<ProfileScreen> {
     context.read<ProfileCubit>().loadProfile();
   }
 
+  void _showSettingsSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Theme.of(context).brightness == Brightness.dark
+          ? AppColors.backgroundDark
+          : AppColors.backgroundLight,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
+      ),
+      builder: (context) => const SettingsSheet(),
+    );
+  }
+
+  void _showEditProfileSheet(BuildContext context, String name, String phone, String city) {
+    final cubit = context.read<ProfileCubit>();
+    final messenger = ScaffoldMessenger.of(context);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Theme.of(context).brightness == Brightness.dark
+          ? AppColors.backgroundDark
+          : AppColors.backgroundLight,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
+      ),
+      builder: (context) => EditProfileSheet(
+        currentName: name,
+        currentPhone: phone,
+        currentCity: city,
+        onSubmit: (newName, newPhone, newCity) async {
+          final success = await cubit.updateProfile(
+            fullName: newName,
+            phone: newPhone,
+            city: newCity,
+          );
+          if (success) {
+            messenger.showSnackBar(
+              const SnackBar(
+                content: Text('تم تحديث البيانات الشخصية بنجاح!'),
+                duration: Duration(seconds: 2),
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
+        },
+      ),
+    );
+  }
+
+  void _showChangeAvatarSheet(BuildContext context, String currentAvatar) {
+    final cubit = context.read<ProfileCubit>();
+    final messenger = ScaffoldMessenger.of(context);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Theme.of(context).brightness == Brightness.dark
+          ? AppColors.backgroundDark
+          : AppColors.backgroundLight,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
+      ),
+      builder: (context) => ChangeAvatarSheet(
+        currentAvatar: currentAvatar,
+        onSelected: (newAvatarUrl) async {
+          final success = await cubit.updateAvatar(newAvatarUrl);
+          if (success) {
+            messenger.showSnackBar(
+              const SnackBar(
+                content: Text('تم تحديث الصورة الشخصية بنجاح!'),
+                duration: Duration(seconds: 2),
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
+        },
+      ),
+    );
+  }
+
+  void _showChangePasswordSheet(BuildContext context) {
+    final cubit = context.read<ProfileCubit>();
+    final messenger = ScaffoldMessenger.of(context);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Theme.of(context).brightness == Brightness.dark
+          ? AppColors.backgroundDark
+          : AppColors.backgroundLight,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
+      ),
+      builder: (context) => ChangePasswordSheet(
+        onSubmit: (currentPassword, newPassword) async {
+          final success = await cubit.changePassword(
+            currentPassword: currentPassword,
+            newPassword: newPassword,
+          );
+          if (success) {
+            messenger.showSnackBar(
+              const SnackBar(
+                content: Text('تم تغيير كلمة المرور بنجاح!'),
+                duration: Duration(seconds: 2),
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -33,7 +152,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           'الملف الشخصي',
           style: AppTypography.heading3(
             color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
-          ),
+          ).copyWith(fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
         actions: [
@@ -42,7 +161,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               Icons.settings_outlined,
               color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
             ),
-            onPressed: () {},
+            onPressed: () => _showSettingsSheet(context),
           ),
         ],
       ),
@@ -54,46 +173,51 @@ class _ProfileScreenState extends State<ProfileScreen> {
               final user = (state is ProfileLoaded) ? state.user : null;
               final name = user?.fullName ?? 'أحمد محمد';
               final phone = user?.phone ?? '01012345678';
-              final avatar = user?.avatarUrl ?? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400';
+              final city = user?.city ?? 'القاهرة';
+              final avatar = user?.avatarUrl ??
+                  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400';
 
               return Column(
                 children: [
                   SizedBox(height: 12.h),
                   // Avatar Header
                   Center(
-                    child: Stack(
-                      children: [
-                        Container(
-                          width: 100.w,
-                          height: 100.w,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(color: AppColors.primary, width: 3.w),
-                          ),
-                          child: ClipOval(
-                            child: CachedNetworkImage(
-                              imageUrl: avatar,
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                        ),
-                        Positioned(
-                          bottom: 0,
-                          right: 0,
-                          child: Container(
-                            padding: EdgeInsets.all(6.w),
-                            decoration: const BoxDecoration(
-                              color: AppColors.primary,
+                    child: GestureDetector(
+                      onTap: () => _showChangeAvatarSheet(context, avatar),
+                      child: Stack(
+                        children: [
+                          Container(
+                            width: 100.w,
+                            height: 100.w,
+                            decoration: BoxDecoration(
                               shape: BoxShape.circle,
+                              border: Border.all(color: AppColors.primary, width: 3.w),
                             ),
-                            child: Icon(
-                              Icons.camera_alt,
-                              size: 16.sp,
-                              color: Colors.white,
+                            child: ClipOval(
+                              child: CachedNetworkImage(
+                                imageUrl: avatar,
+                                fit: BoxFit.cover,
+                              ),
                             ),
                           ),
-                        ),
-                      ],
+                          Positioned(
+                            bottom: 0,
+                            right: 0,
+                            child: Container(
+                              padding: EdgeInsets.all(6.w),
+                              decoration: const BoxDecoration(
+                                color: AppColors.primary,
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.camera_alt,
+                                size: 16.sp,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                   SizedBox(height: 12.h),
@@ -105,12 +229,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                   SizedBox(height: 4.h),
                   Text(
-                    phone,
+                    '$phone • $city',
                     style: AppTypography.caption(
                       color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
                     ),
                   ),
                   SizedBox(height: 28.h),
+
                   // Options List Container
                   Container(
                     decoration: BoxDecoration(
@@ -139,42 +264,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         _buildOptionTile(
                           icon: Icons.person_outline,
                           title: 'المعلومات الشخصية',
-                          onTap: () {},
+                          onTap: () => _showEditProfileSheet(context, name, phone, city),
                           isDark: isDark,
                         ),
                         const Divider(height: 1, color: AppColors.greyBorder),
                         _buildOptionTile(
-                          icon: Icons.credit_card_outlined,
-                          title: 'طرق الدفع',
-                          onTap: () {},
-                          isDark: isDark,
-                        ),
-                        const Divider(height: 1, color: AppColors.greyBorder),
-                        _buildOptionTile(
-                          icon: Icons.location_on_outlined,
-                          title: 'العناوين المحفوظة',
-                          onTap: () {},
-                          isDark: isDark,
-                        ),
-                        const Divider(height: 1, color: AppColors.greyBorder),
-                        _buildOptionTile(
-                          icon: Icons.favorite_border,
-                          title: 'المفضلة',
-                          onTap: () {},
+                          icon: Icons.lock_outline_rounded,
+                          title: 'تغيير كلمة المرور',
+                          onTap: () => _showChangePasswordSheet(context),
                           isDark: isDark,
                         ),
                         const Divider(height: 1, color: AppColors.greyBorder),
                         _buildOptionTile(
                           icon: Icons.notifications_none_outlined,
                           title: 'الإشعارات',
-                          onTap: () {},
+                          onTap: () => context.push('/notifications'),
                           isDark: isDark,
                         ),
                         const Divider(height: 1, color: AppColors.greyBorder),
                         _buildOptionTile(
-                          icon: Icons.help_outline,
-                          title: 'الدعم والمساعدة',
-                          onTap: () {},
+                          icon: Icons.settings_outlined,
+                          title: 'الإعدادات والتفضيلات',
+                          onTap: () => _showSettingsSheet(context),
                           isDark: isDark,
                         ),
                         const Divider(height: 1, color: AppColors.greyBorder),
