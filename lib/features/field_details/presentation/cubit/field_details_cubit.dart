@@ -68,15 +68,12 @@ class FieldDetailsCubit extends Cubit<FieldDetailsState> {
   Future<void> toggleFavorite() async {
     if (state is FieldDetailsLoaded) {
       final currentState = state as FieldDetailsLoaded;
-      final newFavState = !currentState.isFavorite;
-
-      emit(currentState.copyWith(
-        isFavorite: newFavState,
-        field: currentState.field.copyWith(isFavorite: newFavState),
-      ));
-
       try {
-        await _repository.toggleFavorite(currentState.field.id, 'user-id');
+        final isFavNow = await _repository.toggleFavorite(currentState.field.id);
+        emit(currentState.copyWith(
+          isFavorite: isFavNow,
+          field: currentState.field.copyWith(isFavorite: isFavNow),
+        ));
       } catch (_) {}
     }
   }
