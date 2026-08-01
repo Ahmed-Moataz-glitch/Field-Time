@@ -363,6 +363,38 @@ class FieldRepository {
     return isFavNow;
   }
 
+  static final Map<String, List<ReviewModel>> _mockReviews = {
+    'field-1': [
+      const ReviewModel(
+        id: 'rev-1',
+        userId: 'u1',
+        userName: 'أحمد محمود',
+        userAvatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200',
+        rating: 5.0,
+        comment: 'ملعب ممتاز جداً والنجيل الصناعي جودته عالية والإضاءة ممتازة ليلاً. ننصح باللعب فيه!',
+        createdAt: 'منذ 3 أيام',
+      ),
+      const ReviewModel(
+        id: 'rev-2',
+        userId: 'u2',
+        userName: 'مصطفى حسن',
+        userAvatar: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?auto=format&fit=crop&q=80&w=200',
+        rating: 4.5,
+        comment: 'المكان نظيف وغرف التبديل مرتبة، ولكن يفضل زيادة أماكن وركن السيارات.',
+        createdAt: 'منذ أسبوع',
+      ),
+      const ReviewModel(
+        id: 'rev-3',
+        userId: 'u3',
+        userName: 'عمر خالد',
+        userAvatar: null,
+        rating: 5.0,
+        comment: 'خدمة حجز سريعة وتعامل راقي من إدارة الملعب.',
+        createdAt: 'منذ أسبوعين',
+      ),
+    ]
+  };
+
   Future<List<ReviewModel>> getReviewsByFieldId(String fieldId) async {
     try {
       final response = await _supabase
@@ -375,35 +407,115 @@ class FieldRepository {
       }
     } catch (_) {}
 
-    return const [
-      ReviewModel(
-        id: 'rev-1',
-        userId: 'u1',
-        userName: 'أحمد محمود',
-        userAvatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200',
-        rating: 5.0,
-        comment: 'ملعب ممتاز جداً والنجيل الصناعي جودته عالية والإضاءة ممتازة ليلاً. ننصح باللعب فيه!',
-        createdAt: 'منذ 3 أيام',
-      ),
-      ReviewModel(
-        id: 'rev-2',
-        userId: 'u2',
-        userName: 'مصطفى حسن',
-        userAvatar: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?auto=format&fit=crop&q=80&w=200',
-        rating: 4.5,
-        comment: 'المكان نظيف وغرف التبديل مرتبة، ولكن يفضل زيادة أماكن وركن السيارات.',
-        createdAt: 'منذ أسبوع',
-      ),
-      ReviewModel(
-        id: 'rev-3',
-        userId: 'u3',
-        userName: 'عمر خالد',
-        userAvatar: null,
-        rating: 5.0,
-        comment: 'خدمة حجز سريعة وتعامل راقي من إدارة الملعب.',
-        createdAt: 'منذ أسبوعين',
-      ),
-    ];
+    return _mockReviews[fieldId] ??
+        const [
+          ReviewModel(
+            id: 'rev-1',
+            userId: 'u1',
+            userName: 'أحمد محمود',
+            userAvatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200',
+            rating: 5.0,
+            comment: 'ملعب ممتاز جداً والنجيل الصناعي جودته عالية والإضاءة ممتازة ليلاً. ننصح باللعب فيه!',
+            createdAt: 'منذ 3 أيام',
+          ),
+          ReviewModel(
+            id: 'rev-2',
+            userId: 'u2',
+            userName: 'مصطفى حسن',
+            userAvatar: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?auto=format&fit=crop&q=80&w=200',
+            rating: 4.5,
+            comment: 'المكان نظيف وغرف التبديل مرتبة، ولكن يفضل زيادة أماكن وركن السيارات.',
+            createdAt: 'منذ أسبوع',
+          ),
+        ];
+  }
+
+  Future<ReviewModel> addReview({
+    required String fieldId,
+    required double rating,
+    required String comment,
+  }) async {
+    final currentUser = _supabase.auth.currentUser;
+    final userId = currentUser?.id ?? 'current-user-id';
+    final userName = currentUser?.userMetadata?['full_name'] as String? ?? 'أنت (مستخدم كابتن)';
+
+    final newReviewId = 'rev-${DateTime.now().millisecondsSinceEpoch}';
+    final newReview = ReviewModel(
+      id: newReviewId,
+      userId: userId,
+      userName: userName,
+      rating: rating,
+      comment: comment,
+      createdAt: 'الآن',
+    );
+
+    try {
+      await _supabase.from('reviews').insert({
+        'field_id': fieldId,
+        'user_id': userId,
+        'rating': rating,
+        'comment': comment,
+      });
+    } catch (_) {}
+
+    final list = List<ReviewModel>.from(_mockReviews[fieldId] ?? []);
+    list.insert(0, newReview);
+    _mockReviews[fieldId] = list;
+
+    return newReview;
+  }
+
+  Future<ReviewModel> editReview({
+    required String reviewId,
+    required String fieldId,
+    required double rating,
+    required String comment,
+  }) async {
+    try {
+      await _supabase.from('reviews').update({
+        'rating': rating,
+        'comment': comment,
+      }).eq('id', reviewId);
+    } catch (_) {}
+
+    final list = List<ReviewModel>.from(_mockReviews[fieldId] ?? []);
+    final index = list.indexWhere((r) => r.id == reviewId);
+    ReviewModel updatedReview;
+
+    if (index != -1) {
+      updatedReview = list[index].copyWith(
+        rating: rating,
+        comment: comment,
+        createdAt: 'تم التعديل الآن',
+      );
+      list[index] = updatedReview;
+    } else {
+      updatedReview = ReviewModel(
+        id: reviewId,
+        userId: 'current-user-id',
+        userName: 'أنت',
+        rating: rating,
+        comment: comment,
+        createdAt: 'تم التعديل الآن',
+      );
+      list.insert(0, updatedReview);
+    }
+    _mockReviews[fieldId] = list;
+
+    return updatedReview;
+  }
+
+  Future<void> deleteReview({
+    required String reviewId,
+    required String fieldId,
+  }) async {
+    try {
+      await _supabase.from('reviews').delete().eq('id', reviewId);
+    } catch (_) {}
+
+    final list = List<ReviewModel>.from(_mockReviews[fieldId] ?? []);
+    list.removeWhere((r) => r.id == reviewId);
+    _mockReviews[fieldId] = list;
   }
 }
 
