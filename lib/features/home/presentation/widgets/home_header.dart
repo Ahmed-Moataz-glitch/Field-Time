@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:go_router/go_router.dart';
 import 'package:field_time/core/constants/app_colors.dart';
 import 'package:field_time/core/constants/app_typography.dart';
 import 'package:field_time/features/home/presentation/widgets/location_picker_sheet.dart';
+import 'package:field_time/features/notifications/presentation/cubit/notifications_cubit.dart';
 import 'package:field_time/l10n/generated/app_localizations.dart';
 
 class HomeHeader extends StatelessWidget {
@@ -95,59 +98,68 @@ class HomeHeader extends StatelessWidget {
           ),
         ),
         SizedBox(width: 12.w),
+
         // Notifications Bell Icon
-        GestureDetector(
-          onTap: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(l10n?.notifications ?? 'الإشعارات'),
-                duration: const Duration(seconds: 2),
-                behavior: SnackBarBehavior.floating,
+        BlocBuilder<NotificationsCubit, NotificationsState>(
+          builder: (context, state) {
+            final unreadCount = state is NotificationsLoaded ? state.unreadCount : 0;
+
+            return GestureDetector(
+              onTap: () => context.push('/notifications'),
+              child: Container(
+                width: 46.w,
+                height: 46.w,
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.cardDark : AppColors.greyLight,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    if (!isDark)
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.04),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                  ],
+                ),
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Icon(
+                      Icons.notifications_none_rounded,
+                      color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                      size: 24.sp,
+                    ),
+                    if (unreadCount > 0)
+                      Positioned(
+                        top: 9.h,
+                        right: 9.w,
+                        child: Container(
+                          padding: EdgeInsets.all(2.w),
+                          constraints: BoxConstraints(minWidth: 14.w, minHeight: 14.w),
+                          decoration: BoxDecoration(
+                            color: AppColors.error,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: isDark ? AppColors.cardDark : AppColors.cardLight,
+                              width: 1.5,
+                            ),
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            '$unreadCount',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 9.sp,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
               ),
             );
           },
-          child: Container(
-            width: 46.w,
-            height: 46.w,
-            decoration: BoxDecoration(
-              color: isDark ? AppColors.cardDark : AppColors.greyLight,
-              shape: BoxShape.circle,
-              boxShadow: [
-                if (!isDark)
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.04),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-              ],
-            ),
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                Icon(
-                  Icons.notifications_none_rounded,
-                  color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
-                  size: 24.sp,
-                ),
-                Positioned(
-                  top: 11.h,
-                  right: 11.w,
-                  child: Container(
-                    width: 9.w,
-                    height: 9.w,
-                    decoration: BoxDecoration(
-                      color: AppColors.error,
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: isDark ? AppColors.cardDark : AppColors.cardLight,
-                        width: 1.5,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
         ),
       ],
     );

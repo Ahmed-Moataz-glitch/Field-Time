@@ -92,9 +92,9 @@ In Progress
 
 # Notifications
 
-- [ ] Booking Notification
-- [ ] Reminder Notification
-- [ ] Offers Notification
+- [x] Booking Notification
+- [x] Reminder Notification
+- [x] Offers Notification
 
 ---
 
