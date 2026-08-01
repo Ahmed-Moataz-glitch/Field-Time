@@ -4,8 +4,10 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:field_time/core/constants/app_colors.dart';
 import 'package:field_time/core/constants/app_typography.dart';
+import 'package:field_time/core/localization/locale_cubit.dart';
 import 'package:field_time/core/widgets/loading_skeleton.dart';
 import 'package:field_time/core/widgets/primary_button.dart';
+import 'package:field_time/features/favorites/presentation/cubit/favorites_cubit.dart';
 import 'package:field_time/features/home/presentation/cubit/home_cubit.dart';
 import 'package:field_time/features/home/presentation/cubit/home_state.dart';
 import 'package:field_time/features/home/presentation/widgets/category_chip.dart';
@@ -24,20 +26,32 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final _searchController = TextEditingController();
+  final TextEditingController _searchController = TextEditingController();
 
-  final List<Map<String, dynamic>> _categories = const [
-    {'title': 'كل الملاعب', 'icon': Icons.sports_soccer_rounded},
-    {'title': 'خماسي', 'icon': Icons.person_rounded},
-    {'title': 'سباعي', 'icon': Icons.groups_rounded},
-    {'title': 'صالات', 'icon': Icons.roofing_rounded},
-    {'title': 'العروض', 'icon': Icons.local_offer_rounded},
-  ];
+  List<Map<String, dynamic>> _getCategories(bool isArabic) {
+    return [
+      {'title': isArabic ? 'كل الملاعب' : 'All Fields', 'rawKey': 'كل الملاعب', 'icon': Icons.sports_soccer_rounded},
+      {'title': isArabic ? 'خماسي' : '5v5', 'rawKey': 'خماسي', 'icon': Icons.groups_rounded},
+      {'title': isArabic ? 'سباعي' : '7v7', 'rawKey': 'سباعي', 'icon': Icons.stadium_rounded},
+      {'title': '11v11', 'rawKey': '11v11', 'icon': Icons.flag_rounded},
+      {'title': isArabic ? 'صالات' : 'Indoor', 'rawKey': 'صالات', 'icon': Icons.domain_rounded},
+      {'title': isArabic ? 'العروض' : 'Offers', 'rawKey': 'العروض', 'icon': Icons.local_offer_rounded},
+    ];
+  }
 
   @override
   void initState() {
     super.initState();
     context.read<HomeCubit>().loadHomeData();
+  }
+
+  void _toggleFavorite(BuildContext context, String fieldId) async {
+    await context.read<HomeCubit>().toggleFavorite(fieldId);
+    if (context.mounted) {
+      try {
+        context.read<FavoritesCubit>().loadFavorites(isRefresh: true);
+      } catch (_) {}
+    }
   }
 
   @override
@@ -50,6 +64,8 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final l10n = AppLocalizations.of(context);
+    final isArabic = context.watch<LocaleCubit>().state.isArabic;
+    final categories = _getCategories(isArabic);
 
     return Scaffold(
       body: SafeArea(
@@ -60,84 +76,106 @@ class _HomeScreenState extends State<HomeScreen> {
             }
 
             if (state is HomeError) {
-              return _buildErrorState(context, state.message, isDark);
+              return _buildErrorState(context, state.message, isDark, isArabic);
             }
 
             if (state is HomeLoaded) {
-              final isSearchingOrFiltering = state.searchQuery.isNotEmpty ||
-                  state.filterParams.hasActiveFilters ||
-                  state.selectedCategory != 'كل الملاعب';
-
               return RefreshIndicator(
                 onRefresh: () async {
                   await context.read<HomeCubit>().loadHomeData(isRefresh: true);
+                  if (context.mounted) {
+                    try {
+                      await context.read<FavoritesCubit>().loadFavorites(isRefresh: true);
+                    } catch (_) {}
+                  }
                 },
                 color: AppColors.primary,
                 backgroundColor: isDark ? AppColors.cardDark : AppColors.cardLight,
                 child: SingleChildScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
                   padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 16.h),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // 1. Header (Greeting + Location Picker + Notifications)
+                      // 1. Header with greeting, location & notification icon
                       HomeHeader(
-                        userName: 'أحمد',
+                        userName: isArabic ? 'أحمد' : 'Ahmed',
                         selectedCity: state.selectedCity,
                         onCityChanged: (city) {
                           context.read<HomeCubit>().selectCity(city);
                         },
                       ),
-                      SizedBox(height: 18.h),
+                      SizedBox(height: 20.h),
 
-                      // 2. Search Bar + Filter Modal Trigger
+                      // 2. Search Bar
                       HomeSearchBar(
                         controller: _searchController,
-                        onChanged: (val) {
-                          context.read<HomeCubit>().searchFields(val);
+                        onChanged: (query) {
+                          context.read<HomeCubit>().searchFields(query);
                         },
                         filterParams: state.filterParams,
                         onFilterApplied: (params) {
                           context.read<HomeCubit>().applyFilter(params);
                         },
                       ),
-                      SizedBox(height: 18.h),
+                      SizedBox(height: 20.h),
 
-                      // 3. Category Horizontal Chips
+                      // 3. Category Filter Chips
                       SizedBox(
-                        height: 44.h,
+                        height: 40.h,
                         child: ListView.separated(
                           scrollDirection: Axis.horizontal,
-                          itemCount: _categories.length,
+                          itemCount: categories.length,
                           separatorBuilder: (_, __) => SizedBox(width: 10.w),
                           itemBuilder: (context, index) {
-                            final cat = _categories[index];
-                            final title = cat['title'] as String;
-                            final isSelected = title == state.selectedCategory;
+                            final cat = categories[index];
+                            final displayTitle = cat['title'] as String;
+                            final rawKey = cat['rawKey'] as String;
+                            final icon = cat['icon'] as IconData;
+                            final isSelected = state.selectedCategory == rawKey || state.selectedCategory == displayTitle;
 
                             return CategoryChip(
-                              title: title,
-                              icon: cat['icon'] as IconData,
+                              title: displayTitle,
+                              icon: icon,
                               isSelected: isSelected,
                               onTap: () {
-                                context.read<HomeCubit>().selectCategory(title);
+                                context.read<HomeCubit>().selectCategory(rawKey);
                               },
                             );
                           },
                         ),
                       ),
-                      SizedBox(height: 20.h),
+                      SizedBox(height: 24.h),
 
-                      // If user is searching or applying filters, show filtered results directly
-                      if (isSearchingOrFiltering) ...[
-                        _buildSectionHeader(
-                          context,
-                          title: 'نتائج البحث والتصفية (${state.filteredFields.length})',
-                          icon: Icons.filter_alt_rounded,
+                      // Show Category/Search Filtered List if active filter
+                      if (state.selectedCategory != 'كل الملاعب' ||
+                          state.searchQuery.isNotEmpty ||
+                          state.filterParams.hasActiveFilters) ...[
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              isArabic
+                                  ? 'نتائج البحث (${state.filteredFields.length})'
+                                  : 'Search Results (${state.filteredFields.length})',
+                              style: AppTypography.title(
+                                color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                              ).copyWith(fontWeight: FontWeight.bold),
+                            ),
+                            TextButton(
+                              onPressed: () {
+                                _searchController.clear();
+                                context.read<HomeCubit>().selectCategory('كل الملاعب');
+                              },
+                              child: Text(
+                                isArabic ? 'مسح الكل' : 'Clear All',
+                                style: AppTypography.caption(color: AppColors.primary),
+                              ),
+                            ),
+                          ],
                         ),
                         SizedBox(height: 14.h),
                         if (state.filteredFields.isEmpty)
-                          _buildEmptyState(context, isDark)
+                          _buildEmptyState(context, isDark, isArabic)
                         else
                           ListView.builder(
                             shrinkWrap: true,
@@ -151,7 +189,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 isFavorite: isFav,
                                 onTap: () => context.push('/field-details/${field.id}'),
                                 onFavoriteToggle: () {
-                                  context.read<HomeCubit>().toggleFavorite(field.id);
+                                  _toggleFavorite(context, field.id);
                                 },
                               );
                             },
@@ -167,7 +205,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         if (state.popularFields.isNotEmpty) ...[
                           _buildSectionHeader(
                             context,
-                            title: l10n?.popularFields ?? 'الملاعب الأكثر شعبية',
+                            title: l10n?.popularFields ?? (isArabic ? 'الملاعب الأكثر شعبية' : 'Popular Fields'),
                             icon: Icons.local_fire_department_rounded,
                             iconColor: Colors.orangeAccent,
                           ),
@@ -189,7 +227,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                     cubit.loadHomeData();
                                   },
                                   onFavoriteToggle: () {
-                                    context.read<HomeCubit>().toggleFavorite(field.id);
+                                    _toggleFavorite(context, field.id);
                                   },
                                 );
                               },
@@ -201,7 +239,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         // 6. Nearby Fields Section
                         _buildSectionHeader(
                           context,
-                          title: l10n?.nearbyFields ?? 'ملاعب قريبة منك',
+                          title: l10n?.nearbyFields ?? (isArabic ? 'ملاعب قريبة منك' : 'Nearby Fields'),
                           icon: Icons.near_me_rounded,
                         ),
                         SizedBox(height: 14.h),
@@ -217,7 +255,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               isFavorite: isFav,
                               onTap: () => context.push('/field-details/${field.id}'),
                               onFavoriteToggle: () {
-                                context.read<HomeCubit>().toggleFavorite(field.id);
+                                _toggleFavorite(context, field.id);
                               },
                             );
                           },
@@ -228,7 +266,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         if (state.recommendedFields.isNotEmpty) ...[
                           _buildSectionHeader(
                             context,
-                            title: l10n?.recommendedFields ?? 'ملاعب مقترحة لك',
+                            title: l10n?.recommendedFields ?? (isArabic ? 'ملاعب مقترحة لك' : 'Recommended Fields'),
                             icon: Icons.thumb_up_alt_rounded,
                           ),
                           SizedBox(height: 14.h),
@@ -244,7 +282,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 isFavorite: isFav,
                                 onTap: () => context.push('/field-details/${field.id}'),
                                 onFavoriteToggle: () {
-                                  context.read<HomeCubit>().toggleFavorite(field.id);
+                                  _toggleFavorite(context, field.id);
                                 },
                               );
                             },
@@ -271,7 +309,6 @@ class _HomeScreenState extends State<HomeScreen> {
     Color iconColor = AppColors.primary,
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final l10n = AppLocalizations.of(context);
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -287,12 +324,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ).copyWith(fontWeight: FontWeight.bold),
             ),
           ],
-        ),
-        Text(
-          l10n?.seeAll ?? 'عرض الكل',
-          style: AppTypography.caption(color: AppColors.primary).copyWith(
-            fontWeight: FontWeight.w600,
-          ),
         ),
       ],
     );
@@ -334,7 +365,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildErrorState(BuildContext context, String message, bool isDark) {
+  Widget _buildErrorState(BuildContext context, String message, bool isDark, bool isArabic) {
     final l10n = AppLocalizations.of(context);
 
     return Center(
@@ -346,7 +377,7 @@ class _HomeScreenState extends State<HomeScreen> {
             Icon(Icons.error_outline_rounded, size: 64.sp, color: AppColors.error),
             SizedBox(height: 16.h),
             Text(
-              l10n?.errorOccurred ?? 'حدث خطأ غير متوقع',
+              l10n?.errorOccurred ?? (isArabic ? 'حدث خطأ غير متوقع' : 'An error occurred'),
               style: AppTypography.title(
                 color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
               ).copyWith(fontWeight: FontWeight.bold),
@@ -363,7 +394,7 @@ class _HomeScreenState extends State<HomeScreen> {
             SizedBox(
               width: 160.w,
               child: PrimaryButton(
-                title: l10n?.retry ?? 'إعادة المحاولة',
+                title: l10n?.retry ?? (isArabic ? 'إعادة المحاولة' : 'Retry'),
                 onPressed: () {
                   context.read<HomeCubit>().loadHomeData();
                 },
@@ -375,26 +406,32 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildEmptyState(BuildContext context, bool isDark) {
-    final l10n = AppLocalizations.of(context);
-
+  Widget _buildEmptyState(BuildContext context, bool isDark, bool isArabic) {
     return Container(
       width: double.infinity,
       padding: EdgeInsets.symmetric(vertical: 40.h),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
-            Icons.search_off_rounded,
-            size: 56.sp,
+            Icons.sports_soccer_outlined,
+            size: 64.sp,
             color: isDark ? AppColors.textSecondaryDark : AppColors.iconGrey,
           ),
-          SizedBox(height: 12.h),
+          SizedBox(height: 16.h),
           Text(
-            l10n?.noData ?? 'لا توجد ملاعب مطابقة للبحث',
+            isArabic ? 'لا توجد ملاعب مطابقة لمحددات البحث' : 'No fields match your search filters',
+            style: AppTypography.title(
+              color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+            ).copyWith(fontWeight: FontWeight.bold),
+            textAlign: TextAlign.center,
+          ),
+          SizedBox(height: 8.h),
+          Text(
+            isArabic ? 'جرب تغيير كلمة البحث أو فلاتر التصفية.' : 'Try changing your search terms or filters.',
             style: AppTypography.body(
               color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
-            ).copyWith(fontWeight: FontWeight.w600),
+            ),
+            textAlign: TextAlign.center,
           ),
         ],
       ),

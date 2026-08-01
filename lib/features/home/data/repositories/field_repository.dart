@@ -188,6 +188,7 @@ class FieldRepository {
             .eq('user_id', currentUser.id);
         if ((response as List).isNotEmpty) {
           final ids = (response as List).map((e) => e['field_id'] as String).toSet();
+          _favoriteFieldIds.clear();
           _favoriteFieldIds.addAll(ids);
         }
       } catch (_) {}

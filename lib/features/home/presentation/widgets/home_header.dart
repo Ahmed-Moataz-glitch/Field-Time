@@ -104,58 +104,66 @@ class HomeHeader extends StatelessWidget {
           builder: (context, state) {
             final unreadCount = state is NotificationsLoaded ? state.unreadCount : 0;
 
-            return GestureDetector(
-              onTap: () => context.push('/notifications'),
-              child: Container(
-                width: 46.w,
-                height: 46.w,
-                decoration: BoxDecoration(
-                  color: isDark ? AppColors.cardDark : AppColors.greyLight,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    if (!isDark)
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.04),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                  ],
-                ),
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    Icon(
-                      Icons.notifications_none_rounded,
-                      color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
-                      size: 24.sp,
+            return Semantics(
+              button: true,
+              label: 'الإشعارات',
+              hint: unreadCount > 0 ? 'لديك $unreadCount إشعارات غير مقروءة' : 'فتح الإشعارات',
+              child: Tooltip(
+                message: 'الإشعارات',
+                child: GestureDetector(
+                  onTap: () => context.push('/notifications'),
+                  child: Container(
+                    width: 46.w,
+                    height: 46.w,
+                    decoration: BoxDecoration(
+                      color: isDark ? AppColors.cardDark : AppColors.greyLight,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        if (!isDark)
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.04),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                      ],
                     ),
-                    if (unreadCount > 0)
-                      Positioned(
-                        top: 9.h,
-                        right: 9.w,
-                        child: Container(
-                          padding: EdgeInsets.all(2.w),
-                          constraints: BoxConstraints(minWidth: 14.w, minHeight: 14.w),
-                          decoration: BoxDecoration(
-                            color: AppColors.error,
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: isDark ? AppColors.cardDark : AppColors.cardLight,
-                              width: 1.5,
-                            ),
-                          ),
-                          alignment: Alignment.center,
-                          child: Text(
-                            '$unreadCount',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 9.sp,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        Icon(
+                          Icons.notifications_none_rounded,
+                          color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                          size: 24.sp,
                         ),
-                      ),
-                  ],
+                        if (unreadCount > 0)
+                          Positioned(
+                            top: 9.h,
+                            right: 9.w,
+                            child: Container(
+                              padding: EdgeInsets.all(2.w),
+                              constraints: BoxConstraints(minWidth: 14.w, minHeight: 14.w),
+                              decoration: BoxDecoration(
+                                color: AppColors.error,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: isDark ? AppColors.cardDark : AppColors.cardLight,
+                                  width: 1.5,
+                                ),
+                              ),
+                              alignment: Alignment.center,
+                              child: Text(
+                                '$unreadCount',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 9.sp,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             );

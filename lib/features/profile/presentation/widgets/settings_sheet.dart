@@ -5,6 +5,7 @@ import 'package:field_time/core/constants/app_colors.dart';
 import 'package:field_time/core/constants/app_typography.dart';
 import 'package:field_time/core/localization/locale_cubit.dart';
 import 'package:field_time/core/localization/locale_state.dart';
+import 'package:field_time/l10n/generated/app_localizations.dart';
 
 class SettingsSheet extends StatefulWidget {
   const SettingsSheet({super.key});
@@ -19,6 +20,7 @@ class _SettingsSheetState extends State<SettingsSheet> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final l10n = AppLocalizations.of(context);
 
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 20.h),
@@ -40,7 +42,7 @@ class _SettingsSheetState extends State<SettingsSheet> {
             SizedBox(height: 16.h),
             Center(
               child: Text(
-                'الإعدادات والتفضيلات',
+                l10n?.settings ?? 'الإعدادات والتفضيلات',
                 style: AppTypography.heading3(
                   color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
                 ).copyWith(fontWeight: FontWeight.bold),
@@ -50,7 +52,7 @@ class _SettingsSheetState extends State<SettingsSheet> {
 
             // Language Setting Section
             Text(
-              'لغة التطبيق (App Language)',
+              l10n?.language ?? 'لغة التطبيق (App Language)',
               style: AppTypography.caption(color: AppColors.primary).copyWith(
                 fontWeight: FontWeight.bold,
               ),
@@ -75,7 +77,7 @@ class _SettingsSheetState extends State<SettingsSheet> {
                           size: 22.sp,
                         ),
                         title: Text(
-                          'العربية (Arabic)',
+                          l10n?.arabic ?? 'العربية (Arabic)',
                           style: AppTypography.body(
                             color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
                           ).copyWith(
@@ -95,7 +97,7 @@ class _SettingsSheetState extends State<SettingsSheet> {
                           size: 22.sp,
                         ),
                         title: Text(
-                          'English (الإنجليزية)',
+                          l10n?.english ?? 'English (الإنجليزية)',
                           style: AppTypography.body(
                             color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
                           ).copyWith(
@@ -115,7 +117,7 @@ class _SettingsSheetState extends State<SettingsSheet> {
 
             // Notifications Setting Section
             Text(
-              'الإشعارات',
+              l10n?.notifications ?? 'الإشعارات',
               style: AppTypography.caption(color: AppColors.primary).copyWith(
                 fontWeight: FontWeight.bold,
               ),
@@ -131,13 +133,15 @@ class _SettingsSheetState extends State<SettingsSheet> {
                 activeThumbColor: Colors.white,
                 activeTrackColor: AppColors.primary,
                 title: Text(
-                  'إشعارات التذكير والعروض',
+                  stateIsArabic(context) ? 'إشعارات التذكير والعروض' : 'Reminder & Offer Notifications',
                   style: AppTypography.body(
                     color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
                   ).copyWith(fontWeight: FontWeight.bold),
                 ),
                 subtitle: Text(
-                  'استلام تنبيهات بمواعيد المباريات وأحدث العروض والخصومات',
+                  stateIsArabic(context)
+                      ? 'استلام تنبيهات بمواعيد المباريات وأحدث العروض والخصومات'
+                      : 'Receive alerts for booking times and special offers',
                   style: AppTypography.small(
                     color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
                   ),
@@ -154,14 +158,18 @@ class _SettingsSheetState extends State<SettingsSheet> {
               child: Column(
                 children: [
                   Text(
-                    'FieldTime - حجز ملاعب كرة القدم',
+                    stateIsArabic(context)
+                        ? 'FieldTime - حجز ملاعب كرة القدم'
+                        : 'FieldTime - Football Field Booking',
                     style: AppTypography.caption(
                       color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
                     ).copyWith(fontWeight: FontWeight.bold),
                   ),
                   SizedBox(height: 2.h),
                   Text(
-                    'الإصدار 1.0.0 (Build 2026)',
+                    stateIsArabic(context)
+                        ? 'الإصدار 1.0.0 (Build 2026)'
+                        : 'Version 1.0.0 (Build 2026)',
                     style: AppTypography.small(
                       color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
                     ).copyWith(fontSize: 10.sp),
@@ -174,5 +182,9 @@ class _SettingsSheetState extends State<SettingsSheet> {
         ),
       ),
     );
+  }
+
+  bool stateIsArabic(BuildContext context) {
+    return context.read<LocaleCubit>().state.isArabic;
   }
 }

@@ -5,9 +5,11 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:field_time/core/constants/app_colors.dart';
 import 'package:field_time/core/constants/app_typography.dart';
+import 'package:field_time/core/localization/locale_cubit.dart';
 import 'package:field_time/features/booking/data/models/booking_model.dart';
 import 'package:field_time/features/booking/presentation/cubit/booking_cubit.dart';
 import 'package:field_time/features/booking/presentation/cubit/booking_state.dart';
+import 'package:field_time/l10n/generated/app_localizations.dart';
 
 class MyBookingsScreen extends StatefulWidget {
   const MyBookingsScreen({super.key});
@@ -17,39 +19,39 @@ class MyBookingsScreen extends StatefulWidget {
 }
 
 class _MyBookingsScreenState extends State<MyBookingsScreen> {
-  final List<String> _tabs = const ['القادمة', 'السابقة', 'ملغاة'];
-
   @override
   void initState() {
     super.initState();
     context.read<BookingCubit>().loadBookings();
   }
 
-  void _showCancelConfirmationDialog(BuildContext context, BookingModel booking) {
+  void _showCancelConfirmationDialog(BuildContext context, BookingModel booking, bool isArabic) {
     showDialog(
       context: context,
       builder: (dialogCtx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
         title: Text(
-          'تأكيد إلغاء الحجز',
+          isArabic ? 'تأكيد إلغاء الحجز' : 'Confirm Cancellation',
           style: AppTypography.title(color: AppColors.error).copyWith(fontWeight: FontWeight.bold),
         ),
         content: Text(
-          'هل أنت تأكد من رغبتك في إلغاء حجز ملعب (${booking.fieldName}) بتاريخ ${booking.date}؟',
+          isArabic
+              ? 'هل أنت تأكد من رغبتك في إلغاء حجز ملعب (${booking.fieldName}) بتاريخ ${booking.date}؟'
+              : 'Are you sure you want to cancel the booking for (${booking.fieldName}) on ${booking.date}?',
           style: AppTypography.body(color: AppColors.textPrimaryLight),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogCtx),
-            child: const Text('تراجع'),
+            child: Text(isArabic ? 'تراجع' : 'Back'),
           ),
           ElevatedButton(
             onPressed: () {
               Navigator.pop(dialogCtx);
               context.read<BookingCubit>().cancelBooking(booking.id);
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('تم إلغاء الحجز بنجاح'),
+                SnackBar(
+                  content: Text(isArabic ? 'تم إلغاء الحجز بنجاح' : 'Reservation cancelled successfully'),
                   backgroundColor: AppColors.error,
                 ),
               );
@@ -58,7 +60,10 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
               backgroundColor: AppColors.error,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
             ),
-            child: const Text('نعم، إلغاء الحجز', style: TextStyle(color: Colors.white)),
+            child: Text(
+              isArabic ? 'نعم، إلغاء الحجز' : 'Yes, Cancel',
+              style: const TextStyle(color: Colors.white),
+            ),
           ),
         ],
       ),
@@ -68,14 +73,22 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final l10n = AppLocalizations.of(context);
+    final isArabic = context.watch<LocaleCubit>().state.isArabic;
+
+    final tabsMap = {
+      'القادمة': l10n?.upcoming ?? (isArabic ? 'القادمة' : 'Upcoming'),
+      'السابقة': l10n?.completed ?? (isArabic ? 'المكتملة' : 'Completed'),
+      'ملغاة': l10n?.cancelled ?? (isArabic ? 'الملغاة' : 'Cancelled'),
+    };
 
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'حجوزاتي',
+          l10n?.bookings ?? (isArabic ? 'حجوزاتي' : 'My Bookings'),
           style: AppTypography.heading3(
             color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
-          ),
+          ).copyWith(fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
       ),
@@ -90,11 +103,13 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
                 return Padding(
                   padding: EdgeInsets.symmetric(horizontal: 20.w),
                   child: Row(
-                    children: _tabs.map((tab) {
-                      final isSelected = tab == activeTab;
+                    children: tabsMap.entries.map((entry) {
+                      final key = entry.key;
+                      final label = entry.value;
+                      final isSelected = key == activeTab;
                       return Expanded(
                         child: GestureDetector(
-                          onTap: () => context.read<BookingCubit>().changeTab(tab),
+                          onTap: () => context.read<BookingCubit>().changeTab(key),
                           child: Container(
                             margin: EdgeInsets.symmetric(horizontal: 4.w),
                             padding: EdgeInsets.symmetric(vertical: 10.h),
@@ -106,7 +121,7 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
                             ),
                             alignment: Alignment.center,
                             child: Text(
-                              tab,
+                              label,
                               style: AppTypography.caption(
                                 color: isSelected
                                     ? Colors.white
@@ -146,7 +161,7 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
                             Icon(Icons.calendar_today_outlined, size: 48.sp, color: AppColors.iconGrey),
                             SizedBox(height: 12.h),
                             Text(
-                              'لا توجد حجوزات في هذا القسم',
+                              isArabic ? 'لا توجد حجوزات في هذا القسم' : 'No bookings in this section',
                               style: AppTypography.body(
                                 color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
                               ),
@@ -161,7 +176,7 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
                       itemCount: filteredBookings.length,
                       itemBuilder: (context, index) {
                         final booking = filteredBookings[index];
-                        return _buildBookingItem(context, booking, isDark);
+                        return _buildBookingItem(context, booking, isDark, isArabic);
                       },
                     );
                   } else if (state is BookingError) {
@@ -177,16 +192,16 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
     );
   }
 
-  Widget _buildBookingItem(BuildContext context, BookingModel booking, bool isDark) {
+  Widget _buildBookingItem(BuildContext context, BookingModel booking, bool isDark, bool isArabic) {
     Color statusColor = AppColors.primary;
-    String statusLabel = 'مؤكد';
+    String statusLabel = isArabic ? 'مؤكد' : 'Confirmed';
 
     if (booking.status == 'cancelled') {
       statusColor = AppColors.error;
-      statusLabel = 'ملغى';
+      statusLabel = isArabic ? 'ملغى' : 'Cancelled';
     } else if (booking.status == 'completed') {
       statusColor = Colors.blue;
-      statusLabel = 'مكتمل';
+      statusLabel = isArabic ? 'مكتمل' : 'Completed';
     }
 
     return Column(
@@ -285,7 +300,7 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
                             ),
                             const Spacer(),
                             Text(
-                              '${booking.price.toInt()} جنيه',
+                              isArabic ? '${booking.price.toInt()} جنيه' : '${booking.price.toInt()} EGP',
                               style: AppTypography.body(color: AppColors.primary).copyWith(
                                 fontWeight: FontWeight.bold,
                               ),
@@ -303,7 +318,7 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
                   children: [
                     Expanded(
                       child: OutlinedButton(
-                        onPressed: () => _showCancelConfirmationDialog(context, booking),
+                        onPressed: () => _showCancelConfirmationDialog(context, booking, isArabic),
                         style: OutlinedButton.styleFrom(
                           side: const BorderSide(color: AppColors.error, width: 1.5),
                           shape: RoundedRectangleBorder(
@@ -312,7 +327,7 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
                           padding: EdgeInsets.symmetric(vertical: 10.h),
                         ),
                         child: Text(
-                          'إلغاء الحجز',
+                          isArabic ? 'إلغاء الحجز' : 'Cancel Booking',
                           style: AppTypography.caption(color: AppColors.error).copyWith(
                             fontWeight: FontWeight.bold,
                           ),
@@ -331,7 +346,7 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
                           padding: EdgeInsets.symmetric(vertical: 10.h),
                         ),
                         child: Text(
-                          'تفاصيل الملعب',
+                          isArabic ? 'تفاصيل الملعب' : 'Field Details',
                           style: AppTypography.caption(color: AppColors.primary).copyWith(
                             fontWeight: FontWeight.bold,
                           ),

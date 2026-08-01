@@ -14,6 +14,7 @@ import 'package:field_time/features/field_details/presentation/cubit/field_detai
 import 'package:field_time/features/home/data/models/field_model.dart';
 import 'package:field_time/features/home/data/repositories/field_repository.dart';
 import 'package:field_time/features/reviews/presentation/widgets/add_edit_review_bottom_sheet.dart';
+import 'package:field_time/features/favorites/presentation/cubit/favorites_cubit.dart';
 
 class FieldDetailsScreen extends StatelessWidget {
   final String fieldId;
@@ -307,7 +308,14 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
                         color: state.isFavorite ? Colors.red : Colors.white,
                         size: 20.sp,
                       ),
-                      onPressed: () => context.read<FieldDetailsCubit>().toggleFavorite(),
+                      onPressed: () async {
+                        await context.read<FieldDetailsCubit>().toggleFavorite();
+                        if (context.mounted) {
+                          try {
+                            context.read<FavoritesCubit>().loadFavorites(isRefresh: true);
+                          } catch (_) {}
+                        }
+                      },
                     ),
                   ),
                 ],
@@ -1408,41 +1416,48 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Row(
-                    children: [
-                      Text(
-                        '${field.pricePerHour.toInt()} ',
-                        style: AppTypography.heading2(color: AppColors.primary).copyWith(
-                          fontWeight: FontWeight.bold,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          '${field.pricePerHour.toInt()} ',
+                          style: AppTypography.heading2(color: AppColors.primary).copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                      ),
-                      Text(
-                        'جنيه / ساعة',
-                        style: AppTypography.body(color: AppColors.primary),
-                      ),
-                    ],
-                  ),
-                  Row(
-                    children: [
-                      Icon(Icons.access_time, size: 12.sp, color: AppColors.textSecondaryLight),
-                      SizedBox(width: 4.w),
-                      Text(
-                        'الموعد المحدد: $selectedSlot',
-                        style: AppTypography.small(
-                          color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                        Text(
+                          'جنيه / ساعة',
+                          style: AppTypography.body(color: AppColors.primary),
                         ),
-                      ),
-                    ],
-                  ),
-                ],
+                      ],
+                    ),
+                    Row(
+                      children: [
+                        Icon(Icons.access_time, size: 12.sp, color: AppColors.textSecondaryLight),
+                        SizedBox(width: 4.w),
+                        Expanded(
+                          child: Text(
+                            'الموعد المحدد: $selectedSlot',
+                            style: AppTypography.small(
+                              color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
+              SizedBox(width: 12.w),
               PrimaryButton(
                 title: 'احجز الآن',
-                width: 170.w,
+                width: 150.w,
                 onPressed: () {
                   context.push(
                     '/booking',

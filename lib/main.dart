@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -9,6 +10,7 @@ import 'package:field_time/core/localization/locale_cubit.dart';
 import 'package:field_time/core/localization/locale_state.dart';
 import 'package:field_time/core/services/supabase_service.dart';
 import 'package:field_time/core/utils/app_constants.dart';
+import 'package:field_time/core/widgets/app_error_widget.dart';
 import 'package:field_time/features/auth/data/repositories/auth_repository.dart';
 import 'package:field_time/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:field_time/features/booking/data/repositories/booking_repository.dart';
@@ -16,13 +18,32 @@ import 'package:field_time/features/booking/presentation/cubit/booking_cubit.dar
 import 'package:field_time/features/favorites/presentation/cubit/favorites_cubit.dart';
 import 'package:field_time/features/home/data/repositories/field_repository.dart';
 import 'package:field_time/features/home/presentation/cubit/home_cubit.dart';
-import 'package:field_time/features/profile/presentation/cubit/profile_cubit.dart';
-
 import 'package:field_time/features/notifications/data/repositories/notification_repository.dart';
 import 'package:field_time/features/notifications/presentation/cubit/notifications_cubit.dart';
+import 'package:field_time/features/profile/presentation/cubit/profile_cubit.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Production Global Error Handlers
+  FlutterError.onError = (details) {
+    FlutterError.presentError(details);
+    if (kDebugMode) {
+      print('Global FlutterError caught: ${details.exceptionAsString()}');
+    }
+  };
+
+  PlatformDispatcher.instance.onError = (error, stack) {
+    if (kDebugMode) {
+      print('PlatformDispatcher error caught: $error');
+    }
+    return true;
+  };
+
+  ErrorWidget.builder = (FlutterErrorDetails details) {
+    return AppErrorWidget(errorDetails: details);
+  };
+
   await SupabaseService.init();
 
   runApp(const FieldTimeApp());

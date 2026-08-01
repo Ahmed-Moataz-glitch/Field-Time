@@ -5,6 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:field_time/core/constants/app_colors.dart';
 import 'package:field_time/core/constants/app_typography.dart';
+import 'package:field_time/core/localization/locale_cubit.dart';
 import 'package:field_time/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:field_time/features/profile/presentation/cubit/profile_cubit.dart';
 import 'package:field_time/features/profile/presentation/cubit/profile_state.dart';
@@ -12,6 +13,7 @@ import 'package:field_time/features/profile/presentation/widgets/change_avatar_s
 import 'package:field_time/features/profile/presentation/widgets/change_password_sheet.dart';
 import 'package:field_time/features/profile/presentation/widgets/edit_profile_sheet.dart';
 import 'package:field_time/features/profile/presentation/widgets/settings_sheet.dart';
+import 'package:field_time/l10n/generated/app_localizations.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -44,6 +46,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void _showEditProfileSheet(BuildContext context, String name, String phone, String city) {
     final cubit = context.read<ProfileCubit>();
     final messenger = ScaffoldMessenger.of(context);
+    final isArabic = context.read<LocaleCubit>().state.isArabic;
 
     showModalBottomSheet(
       context: context,
@@ -66,9 +69,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           );
           if (success) {
             messenger.showSnackBar(
-              const SnackBar(
-                content: Text('تم تحديث البيانات الشخصية بنجاح!'),
-                duration: Duration(seconds: 2),
+              SnackBar(
+                content: Text(isArabic ? 'تم تحديث البيانات الشخصية بنجاح!' : 'Profile updated successfully!'),
+                duration: const Duration(seconds: 2),
                 behavior: SnackBarBehavior.floating,
               ),
             );
@@ -81,6 +84,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void _showChangeAvatarSheet(BuildContext context, String currentAvatar) {
     final cubit = context.read<ProfileCubit>();
     final messenger = ScaffoldMessenger.of(context);
+    final isArabic = context.read<LocaleCubit>().state.isArabic;
 
     showModalBottomSheet(
       context: context,
@@ -97,9 +101,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           final success = await cubit.updateAvatar(newAvatarUrl);
           if (success) {
             messenger.showSnackBar(
-              const SnackBar(
-                content: Text('تم تحديث الصورة الشخصية بنجاح!'),
-                duration: Duration(seconds: 2),
+              SnackBar(
+                content: Text(isArabic ? 'تم تحديث الصورة الشخصية بنجاح!' : 'Avatar updated successfully!'),
+                duration: const Duration(seconds: 2),
                 behavior: SnackBarBehavior.floating,
               ),
             );
@@ -112,6 +116,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void _showChangePasswordSheet(BuildContext context) {
     final cubit = context.read<ProfileCubit>();
     final messenger = ScaffoldMessenger.of(context);
+    final isArabic = context.read<LocaleCubit>().state.isArabic;
 
     showModalBottomSheet(
       context: context,
@@ -130,9 +135,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           );
           if (success) {
             messenger.showSnackBar(
-              const SnackBar(
-                content: Text('تم تغيير كلمة المرور بنجاح!'),
-                duration: Duration(seconds: 2),
+              SnackBar(
+                content: Text(isArabic ? 'تم تغيير كلمة المرور بنجاح!' : 'Password changed successfully!'),
+                duration: const Duration(seconds: 2),
                 behavior: SnackBarBehavior.floating,
               ),
             );
@@ -145,11 +150,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final l10n = AppLocalizations.of(context);
+    final isArabic = context.read<LocaleCubit>().state.isArabic;
 
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'الملف الشخصي',
+          l10n?.profile ?? (isArabic ? 'الملف الشخصي' : 'Profile'),
           style: AppTypography.heading3(
             color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
           ).copyWith(fontWeight: FontWeight.bold),
@@ -171,9 +178,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           child: BlocBuilder<ProfileCubit, ProfileState>(
             builder: (context, state) {
               final user = (state is ProfileLoaded) ? state.user : null;
-              final name = user?.fullName ?? 'أحمد محمد';
+              final name = user?.fullName ?? (isArabic ? 'أحمد محمد' : 'Ahmed Mohamed');
               final phone = user?.phone ?? '01012345678';
-              final city = user?.city ?? 'القاهرة';
+              final city = user?.city ?? (isArabic ? 'القاهرة' : 'Cairo');
               final avatar = user?.avatarUrl ??
                   'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400';
 
@@ -254,7 +261,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       children: [
                         _buildOptionTile(
                           icon: Icons.storefront_outlined,
-                          title: 'لوحة تحكم صاحب الملعب',
+                          title: isArabic ? 'لوحة تحكم صاحب الملعب' : 'Field Owner Dashboard',
                           textColor: AppColors.primary,
                           iconColor: AppColors.primary,
                           onTap: () => context.push('/owner-dashboard'),
@@ -263,35 +270,35 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         const Divider(height: 1, color: AppColors.greyBorder),
                         _buildOptionTile(
                           icon: Icons.person_outline,
-                          title: 'المعلومات الشخصية',
+                          title: isArabic ? 'المعلومات الشخصية' : 'Personal Information',
                           onTap: () => _showEditProfileSheet(context, name, phone, city),
                           isDark: isDark,
                         ),
                         const Divider(height: 1, color: AppColors.greyBorder),
                         _buildOptionTile(
                           icon: Icons.lock_outline_rounded,
-                          title: 'تغيير كلمة المرور',
+                          title: isArabic ? 'تغيير كلمة المرور' : 'Change Password',
                           onTap: () => _showChangePasswordSheet(context),
                           isDark: isDark,
                         ),
                         const Divider(height: 1, color: AppColors.greyBorder),
                         _buildOptionTile(
                           icon: Icons.notifications_none_outlined,
-                          title: 'الإشعارات',
+                          title: l10n?.notifications ?? (isArabic ? 'الإشعارات' : 'Notifications'),
                           onTap: () => context.push('/notifications'),
                           isDark: isDark,
                         ),
                         const Divider(height: 1, color: AppColors.greyBorder),
                         _buildOptionTile(
                           icon: Icons.settings_outlined,
-                          title: 'الإعدادات والتفضيلات',
+                          title: l10n?.settings ?? (isArabic ? 'الإعدادات والتفضيلات' : 'Settings & Preferences'),
                           onTap: () => _showSettingsSheet(context),
                           isDark: isDark,
                         ),
                         const Divider(height: 1, color: AppColors.greyBorder),
                         _buildOptionTile(
                           icon: Icons.logout,
-                          title: 'تسجيل الخروج',
+                          title: l10n?.logout ?? (isArabic ? 'تسجيل الخروج' : 'Sign Out'),
                           textColor: AppColors.error,
                           iconColor: AppColors.error,
                           onTap: () {

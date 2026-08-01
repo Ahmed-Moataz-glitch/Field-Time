@@ -209,17 +209,24 @@ class BookingSuccessScreen extends StatelessWidget {
       padding: EdgeInsets.symmetric(vertical: 6.h),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             label,
             style: AppTypography.caption(color: Colors.white70),
           ),
-          Text(
-            value,
-            style: AppTypography.body(
-              color: isCode ? AppColors.primary : Colors.white,
-            ).copyWith(
-              fontWeight: FontWeight.bold,
+          SizedBox(width: 12.w),
+          Expanded(
+            child: Text(
+              value,
+              textAlign: TextAlign.end,
+              style: AppTypography.body(
+                color: isCode ? AppColors.primary : Colors.white,
+              ).copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],

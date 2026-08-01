@@ -132,7 +132,7 @@ In Progress
 
 # Final
 
-- [ ] Testing
-- [ ] Performance Optimization
-- [ ] Release Build
-- [ ] Google Play Ready
+- [x] Testing
+- [x] Performance Optimization
+- [x] Release Build
+- [x] Google Play Ready

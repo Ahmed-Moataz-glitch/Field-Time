@@ -4,9 +4,11 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:field_time/core/constants/app_colors.dart';
 import 'package:field_time/core/constants/app_typography.dart';
+import 'package:field_time/core/localization/locale_cubit.dart';
 import 'package:field_time/core/widgets/primary_button.dart';
 import 'package:field_time/features/favorites/presentation/cubit/favorites_cubit.dart';
 import 'package:field_time/features/home/presentation/widgets/field_card.dart';
+import 'package:field_time/l10n/generated/app_localizations.dart';
 
 class FavoritesScreen extends StatefulWidget {
   const FavoritesScreen({super.key});
@@ -22,7 +24,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await context.read<FavoritesCubit>().loadFavorites();
+      await context.read<FavoritesCubit>().loadFavorites(isRefresh: true);
     });
   }
 
@@ -35,11 +37,13 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final l10n = AppLocalizations.of(context);
+    final isArabic = context.watch<LocaleCubit>().state.isArabic;
 
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'المفضلة',
+          l10n?.favorites ?? (isArabic ? 'المفضلة' : 'Favorites'),
           style: AppTypography.heading3(
             color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
           ).copyWith(fontWeight: FontWeight.bold),
@@ -57,13 +61,15 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(
-                    'تم إزالة "${removedField.name}" من المفضلة',
+                    isArabic
+                        ? 'تم إزالة "${removedField.name}" من المفضلة'
+                        : 'Removed "${removedField.name}" from favorites',
                     style: AppTypography.body(color: Colors.white),
                   ),
                   backgroundColor: isDark ? AppColors.cardDark : AppColors.textPrimaryLight,
                   duration: const Duration(seconds: 4),
                   action: SnackBarAction(
-                    label: 'تراجع',
+                    label: isArabic ? 'تراجع' : 'Undo',
                     textColor: AppColors.primary,
                     onPressed: () {
                       context.read<FavoritesCubit>().undoRemoveFavorite();
@@ -81,12 +87,12 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
             }
 
             if (state is FavoritesError) {
-              return _buildErrorState(context, state.message, isDark);
+              return _buildErrorState(context, state.message, isDark, isArabic);
             }
 
             if (state is FavoritesLoaded) {
               if (state.favorites.isEmpty) {
-                return _buildEmptyState(context, isDark);
+                return _buildEmptyState(context, isDark, isArabic);
               }
 
               return RefreshIndicator(
@@ -106,7 +112,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            'الملاعب المفضلة لديك',
+                            isArabic ? 'الملاعب المفضلة لديك' : 'Your Favorite Fields',
                             style: AppTypography.title(
                               color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
                             ).copyWith(fontWeight: FontWeight.bold),
@@ -118,7 +124,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                               borderRadius: BorderRadius.circular(12.r),
                             ),
                             child: Text(
-                              '${state.favorites.length} ملاعب',
+                              isArabic ? '${state.favorites.length} ملاعب' : '${state.favorites.length} fields',
                               style: AppTypography.caption(color: AppColors.primary).copyWith(
                                 fontWeight: FontWeight.bold,
                               ),
@@ -144,7 +150,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                               color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
                             ),
                             decoration: InputDecoration(
-                              hintText: 'ابحث في ملاعبك المفضلة...',
+                              hintText: isArabic ? 'ابحث في ملاعبك المفضلة...' : 'Search in favorite fields...',
                               hintStyle: AppTypography.body(
                                 color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
                               ),
@@ -184,7 +190,9 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                               ),
                               SizedBox(height: 12.h),
                               Text(
-                                'لا توجد ملاعب مفضلة تطابق "${state.searchQuery}"',
+                                isArabic
+                                    ? 'لا توجد ملاعب مفضلة تطابق "${state.searchQuery}"'
+                                    : 'No favorite fields match "${state.searchQuery}"',
                                 style: AppTypography.body(
                                   color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
                                 ),
@@ -224,59 +232,74 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     );
   }
 
-  Widget _buildEmptyState(BuildContext context, bool isDark) {
-    return Center(
-      child: SingleChildScrollView(
-        padding: EdgeInsets.symmetric(horizontal: 32.w, vertical: 24.h),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 120.w,
-              height: 120.w,
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.favorite_rounded,
-                size: 60.sp,
-                color: AppColors.primary,
+  Widget _buildEmptyState(BuildContext context, bool isDark, bool isArabic) {
+    return RefreshIndicator(
+      onRefresh: () async {
+        await context.read<FavoritesCubit>().loadFavorites(isRefresh: true);
+      },
+      color: AppColors.primary,
+      backgroundColor: isDark ? AppColors.cardDark : AppColors.cardLight,
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: [
+          SizedBox(height: 60.h),
+          Center(
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: 32.w),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 120.w,
+                    height: 120.w,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.favorite_rounded,
+                      size: 60.sp,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                  SizedBox(height: 24.h),
+                  Text(
+                    isArabic ? 'لا توجد ملاعب مفضلة حالياً' : 'No Favorite Fields Yet',
+                    style: AppTypography.heading3(
+                      color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                    ).copyWith(fontWeight: FontWeight.bold),
+                    textAlign: TextAlign.center,
+                  ),
+                  SizedBox(height: 10.h),
+                  Text(
+                    isArabic
+                        ? 'أضف ملاعبك المفضلة بالنقر على رمز القلب في بطاقات الملاعب لتتمكن من الوصول إليها وحجزها بسرعة في أي وقت.'
+                        : 'Add fields to your favorites by tapping the heart icon on field cards to quickly access and book them anytime.',
+                    style: AppTypography.body(
+                      color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  SizedBox(height: 28.h),
+                  SizedBox(
+                    width: 200.w,
+                    child: PrimaryButton(
+                      title: isArabic ? 'استكشف الملاعب' : 'Explore Fields',
+                      onPressed: () {
+                        context.go('/main');
+                      },
+                    ),
+                  ),
+                ],
               ),
             ),
-            SizedBox(height: 24.h),
-            Text(
-              'لا توجد ملاعب مفضلة حالياً',
-              style: AppTypography.heading3(
-                color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
-              ).copyWith(fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
-            ),
-            SizedBox(height: 10.h),
-            Text(
-              'أضف ملاعبك المفضلة بالنقر على رمز القلب في بطاقات الملاعب لتتمكن من الوصول إليها وحجزها بسرعة في أي وقت.',
-              style: AppTypography.body(
-                color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            SizedBox(height: 28.h),
-            SizedBox(
-              width: 200.w,
-              child: PrimaryButton(
-                title: 'استكشف الملاعب',
-                onPressed: () {
-                  context.go('/main');
-                },
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildErrorState(BuildContext context, String message, bool isDark) {
+  Widget _buildErrorState(BuildContext context, String message, bool isDark, bool isArabic) {
     return Center(
       child: Padding(
         padding: EdgeInsets.all(24.w),
@@ -286,7 +309,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
             Icon(Icons.error_outline_rounded, size: 56.sp, color: AppColors.error),
             SizedBox(height: 16.h),
             Text(
-              'حدث خطأ أثناء تحميل المفضلة',
+              isArabic ? 'حدث خطأ أثناء تحميل المفضلة' : 'An error occurred loading favorites',
               style: AppTypography.title(
                 color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
               ).copyWith(fontWeight: FontWeight.bold),
@@ -303,7 +326,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
             SizedBox(
               width: 160.w,
               child: PrimaryButton(
-                title: 'إعادة المحاولة',
+                title: isArabic ? 'إعادة المحاولة' : 'Retry',
                 onPressed: () {
                   context.read<FavoritesCubit>().loadFavorites();
                 },

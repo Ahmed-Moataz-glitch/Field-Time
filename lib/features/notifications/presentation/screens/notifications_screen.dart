@@ -4,8 +4,10 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:field_time/core/constants/app_colors.dart';
 import 'package:field_time/core/constants/app_typography.dart';
+import 'package:field_time/core/localization/locale_cubit.dart';
 import 'package:field_time/features/notifications/data/models/notification_model.dart';
 import 'package:field_time/features/notifications/presentation/cubit/notifications_cubit.dart';
+import 'package:field_time/l10n/generated/app_localizations.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -15,13 +17,6 @@ class NotificationsScreen extends StatefulWidget {
 }
 
 class _NotificationsScreenState extends State<NotificationsScreen> {
-  final List<Map<String, String>> _filters = const [
-    {'title': 'الكل', 'key': 'all'},
-    {'title': 'الحجوزات', 'key': 'booking'},
-    {'title': 'التذكيرات', 'key': 'reminder'},
-    {'title': 'العروض', 'key': 'offer'},
-  ];
-
   @override
   void initState() {
     super.initState();
@@ -31,11 +26,20 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final l10n = AppLocalizations.of(context);
+    final isArabic = context.watch<LocaleCubit>().state.isArabic;
+
+    final filters = [
+      {'title': isArabic ? 'الكل' : 'All', 'key': 'all'},
+      {'title': isArabic ? 'الحجوزات' : 'Bookings', 'key': 'booking'},
+      {'title': isArabic ? 'التذكيرات' : 'Reminders', 'key': 'reminder'},
+      {'title': isArabic ? 'العروض' : 'Offers', 'key': 'offer'},
+    ];
 
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'الإشعارات',
+          l10n?.notifications ?? (isArabic ? 'الإشعارات' : 'Notifications'),
           style: AppTypography.heading3(
             color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
           ).copyWith(fontWeight: FontWeight.bold),
@@ -51,7 +55,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   },
                   icon: Icon(Icons.done_all_rounded, size: 16.sp, color: AppColors.primary),
                   label: Text(
-                    'تحديد الكل كمقروء',
+                    isArabic ? 'تحديد الكل كمقروء' : 'Mark all as read',
                     style: AppTypography.small(color: AppColors.primary).copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -73,7 +77,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             }
 
             if (state is NotificationsError) {
-              return _buildErrorState(context, state.message, isDark);
+              return _buildErrorState(context, state.message, isDark, isArabic);
             }
 
             if (state is NotificationsLoaded) {
@@ -87,10 +91,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     child: ListView.separated(
                       padding: EdgeInsets.symmetric(horizontal: 20.w),
                       scrollDirection: Axis.horizontal,
-                      itemCount: _filters.length,
+                      itemCount: filters.length,
                       separatorBuilder: (_, __) => SizedBox(width: 8.w),
                       itemBuilder: (context, index) {
-                        final filter = _filters[index];
+                        final filter = filters[index];
                         final key = filter['key']!;
                         final title = filter['title']!;
                         final isSelected = state.selectedFilter == key;
@@ -126,7 +130,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   // Notifications List or Empty State
                   Expanded(
                     child: state.filteredNotifications.isEmpty
-                        ? _buildEmptyState(context, isDark)
+                        ? _buildEmptyState(context, isDark, isArabic)
                         : RefreshIndicator(
                             onRefresh: () async {
                               await context.read<NotificationsCubit>().loadNotifications(isRefresh: true);
@@ -139,7 +143,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                               separatorBuilder: (_, __) => SizedBox(height: 12.h),
                               itemBuilder: (context, index) {
                                 final notif = state.filteredNotifications[index];
-                                return _buildNotificationCard(context, notif, isDark);
+                                return _buildNotificationCard(context, notif, isDark, isArabic);
                               },
                             ),
                           ),
@@ -155,7 +159,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     );
   }
 
-  Widget _buildNotificationCard(BuildContext context, NotificationModel notif, bool isDark) {
+  Widget _buildNotificationCard(BuildContext context, NotificationModel notif, bool isDark, bool isArabic) {
     IconData iconData;
     Color iconColor;
     Color bgColor;
@@ -198,9 +202,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       onDismissed: (_) {
         context.read<NotificationsCubit>().deleteNotification(notif.id);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('تم حذف الإشعار'),
-            duration: Duration(seconds: 2),
+          SnackBar(
+            content: Text(isArabic ? 'تم حذف الإشعار' : 'Notification deleted'),
+            duration: const Duration(seconds: 2),
           ),
         );
       },
@@ -302,7 +306,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     );
   }
 
-  Widget _buildEmptyState(BuildContext context, bool isDark) {
+  Widget _buildEmptyState(BuildContext context, bool isDark, bool isArabic) {
     return Center(
       child: SingleChildScrollView(
         padding: EdgeInsets.all(32.w),
@@ -324,14 +328,16 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             ),
             SizedBox(height: 20.h),
             Text(
-              'لا توجد إشعارات حالياً',
+              isArabic ? 'لا توجد إشعارات حالياً' : 'No notifications yet',
               style: AppTypography.heading3(
                 color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
               ).copyWith(fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 8.h),
             Text(
-              'ستظهر لك هنا كافة إشعارات تأكيد الحجز وتذكيرات المباريات وأحدث العروض.',
+              isArabic
+                  ? 'ستظهر لك هنا كافة إشعارات تأكيد الحجز وتذكيرات المباريات وأحدث العروض.'
+                  : 'Booking confirmations, match reminders, and special offers will appear here.',
               style: AppTypography.body(
                 color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
               ),
@@ -343,7 +349,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     );
   }
 
-  Widget _buildErrorState(BuildContext context, String message, bool isDark) {
+  Widget _buildErrorState(BuildContext context, String message, bool isDark, bool isArabic) {
     return Center(
       child: Padding(
         padding: EdgeInsets.all(24.w),
@@ -353,7 +359,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             Icon(Icons.error_outline_rounded, size: 56.sp, color: AppColors.error),
             SizedBox(height: 16.h),
             Text(
-              'حدث خطأ أثناء تحميل الإشعارات',
+              isArabic ? 'حدث خطأ أثناء تحميل الإشعارات' : 'An error occurred loading notifications',
               style: AppTypography.title(
                 color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
               ).copyWith(fontWeight: FontWeight.bold),
@@ -371,7 +377,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               onPressed: () {
                 context.read<NotificationsCubit>().loadNotifications();
               },
-              child: const Text('إعادة المحاولة'),
+              child: Text(isArabic ? 'إعادة المحاولة' : 'Retry'),
             ),
           ],
         ),

@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:field_time/core/constants/app_colors.dart';
 import 'package:field_time/core/constants/app_typography.dart';
 import 'package:field_time/features/booking/presentation/screens/my_bookings_screen.dart';
+import 'package:field_time/features/favorites/presentation/cubit/favorites_cubit.dart';
 import 'package:field_time/features/favorites/presentation/screens/favorites_screen.dart';
 import 'package:field_time/features/home/presentation/screens/home_screen.dart';
 import 'package:field_time/features/profile/presentation/screens/profile_screen.dart';
+import 'package:field_time/l10n/generated/app_localizations.dart';
 
 class MainLayoutScreen extends StatefulWidget {
   const MainLayoutScreen({super.key});
@@ -26,6 +29,7 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final l10n = AppLocalizations.of(context);
 
     return Scaffold(
       body: IndexedStack(
@@ -49,6 +53,9 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
             setState(() {
               _currentIndex = index;
             });
+            if (index == 2) {
+              context.read<FavoritesCubit>().loadFavorites(isRefresh: true);
+            }
           },
           type: BottomNavigationBarType.fixed,
           backgroundColor: isDark ? AppColors.cardDark : AppColors.cardLight,
@@ -59,26 +66,26 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
           ),
           unselectedLabelStyle: AppTypography.small(color: AppColors.iconGrey),
           elevation: 0,
-          items: const [
+          items: [
             BottomNavigationBarItem(
-              icon: Icon(Icons.home_outlined),
-              activeIcon: Icon(Icons.home),
-              label: 'الرئيسية',
+              icon: const Icon(Icons.home_outlined),
+              activeIcon: const Icon(Icons.home),
+              label: l10n?.home ?? 'الرئيسية',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.calendar_today_outlined),
-              activeIcon: Icon(Icons.calendar_today),
-              label: 'حجوزاتي',
+              icon: const Icon(Icons.calendar_today_outlined),
+              activeIcon: const Icon(Icons.calendar_today),
+              label: l10n?.bookings ?? 'حجوزاتي',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.favorite_border),
-              activeIcon: Icon(Icons.favorite),
-              label: 'المفضلة',
+              icon: const Icon(Icons.favorite_border),
+              activeIcon: const Icon(Icons.favorite),
+              label: l10n?.favorites ?? 'المفضلة',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline),
-              activeIcon: Icon(Icons.person),
-              label: 'الملف الشخصي',
+              icon: const Icon(Icons.person_outline),
+              activeIcon: const Icon(Icons.person),
+              label: l10n?.profile ?? 'الملف الشخصي',
             ),
           ],
         ),
