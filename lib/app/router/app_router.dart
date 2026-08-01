@@ -13,6 +13,8 @@ import 'package:field_time/features/owner_dashboard/presentation/screens/owner_b
 import 'package:field_time/features/owner_dashboard/presentation/screens/owner_dashboard_screen.dart';
 import 'package:field_time/features/owner_dashboard/presentation/screens/owner_statistics_screen.dart';
 
+import 'package:field_time/features/notifications/presentation/screens/notifications_screen.dart';
+
 abstract class AppRouter {
   static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -24,6 +26,7 @@ abstract class AppRouter {
   static const String fieldDetails = '/field-details/:id';
   static const String booking = '/booking';
   static const String bookingSuccess = '/booking-success';
+  static const String notifications = '/notifications';
   static const String ownerDashboard = '/owner-dashboard';
   static const String addField = '/add-field';
   static const String editField = '/edit-field/:id';
@@ -85,6 +88,10 @@ abstract class AppRouter {
       GoRoute(
         path: bookingSuccess,
         builder: (context, state) => const BookingSuccessScreen(),
+      ),
+      GoRoute(
+        path: notifications,
+        builder: (context, state) => const NotificationsScreen(),
       ),
       GoRoute(
         path: ownerDashboard,

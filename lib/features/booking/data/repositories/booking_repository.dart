@@ -1,6 +1,8 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:field_time/core/errors/failures.dart';
 import 'package:field_time/features/booking/data/models/booking_model.dart';
+import 'package:field_time/features/notifications/data/models/notification_model.dart';
+import 'package:field_time/features/notifications/data/repositories/notification_repository.dart';
 
 class BookingRepository {
   final SupabaseClient _supabase;
@@ -119,6 +121,16 @@ class BookingRepository {
     } catch (_) {}
 
     _mockBookings.insert(0, newBooking);
+
+    try {
+      await NotificationRepository().addNotification(
+        title: 'تم تأكيد حجز جديد! ⚽',
+        body: 'تم تأكيد حجز ملعب "$fieldName" يوم $date الساعة $startTime. كود الحجز: $bookingCode',
+        type: NotificationType.booking,
+        targetId: fieldId,
+      );
+    } catch (_) {}
+
     return newBooking;
   }
 

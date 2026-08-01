@@ -18,6 +18,9 @@ import 'package:field_time/features/home/data/repositories/field_repository.dart
 import 'package:field_time/features/home/presentation/cubit/home_cubit.dart';
 import 'package:field_time/features/profile/presentation/cubit/profile_cubit.dart';
 
+import 'package:field_time/features/notifications/data/repositories/notification_repository.dart';
+import 'package:field_time/features/notifications/presentation/cubit/notifications_cubit.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await SupabaseService.init();
@@ -33,6 +36,7 @@ class FieldTimeApp extends StatelessWidget {
     final fieldRepo = FieldRepository();
     final bookingRepo = BookingRepository();
     final authRepo = AuthRepository();
+    final notifRepo = NotificationRepository();
 
     return MultiBlocProvider(
       providers: [
@@ -42,6 +46,7 @@ class FieldTimeApp extends StatelessWidget {
         BlocProvider(create: (_) => BookingCubit(bookingRepo)),
         BlocProvider(create: (_) => ProfileCubit(authRepo)),
         BlocProvider(create: (_) => FavoritesCubit(fieldRepo)),
+        BlocProvider(create: (_) => NotificationsCubit(notifRepo)),
       ],
       child: ScreenUtilInit(
         designSize: const Size(375, 812),
