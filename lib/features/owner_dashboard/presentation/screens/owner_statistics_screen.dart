@@ -13,7 +13,8 @@ class OwnerStatisticsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => OwnerDashboardCubit(OwnerRepository())..loadDashboardData(),
+      create: (context) =>
+          OwnerDashboardCubit(OwnerRepository())..loadDashboardData(),
       child: const _OwnerStatisticsView(),
     );
   }
@@ -24,6 +25,7 @@ class _OwnerStatisticsView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
@@ -31,7 +33,9 @@ class _OwnerStatisticsView extends StatelessWidget {
         title: Text(
           'إحصائيات الأرباح والأداء',
           style: AppTypography.heading3(
-            color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+            color: isDark
+                ? AppColors.textPrimaryDark
+                : AppColors.textPrimaryLight,
           ),
         ),
         centerTitle: true,
@@ -40,7 +44,9 @@ class _OwnerStatisticsView extends StatelessWidget {
         child: BlocBuilder<OwnerDashboardCubit, OwnerDashboardState>(
           builder: (context, state) {
             if (state is OwnerDashboardLoading) {
-              return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+              return const Center(
+                child: CircularProgressIndicator(color: AppColors.primary),
+              );
             } else if (state is OwnerDashboardLoaded) {
               final stats = state.stats;
 
@@ -51,7 +57,7 @@ class _OwnerStatisticsView extends StatelessWidget {
                   children: [
                     // 1. Total Revenue Summary Card
                     Container(
-                      width: double.infinity,
+                      width: size.width,
                       padding: EdgeInsets.all(20.w),
                       decoration: BoxDecoration(
                         gradient: const LinearGradient(
@@ -78,17 +84,26 @@ class _OwnerStatisticsView extends StatelessWidget {
                           SizedBox(height: 6.h),
                           Text(
                             '${stats.totalEarnings.toInt()} جنيه',
-                            style: AppTypography.heading1(color: Colors.white).copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
+                            style: AppTypography.heading1(
+                              color: Colors.white,
+                            ).copyWith(fontWeight: FontWeight.bold),
                           ),
                           SizedBox(height: 12.h),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              _whiteMetricTile('عدد الحجوزات', '${stats.totalBookings} حجز'),
-                              _whiteMetricTile('نسبة الإشغال', '${stats.occupancyRate}%'),
-                              _whiteMetricTile('الملاعب النشطة', '${stats.activeFieldsCount} ملاعب'),
+                              _whiteMetricTile(
+                                'عدد الحجوزات',
+                                '${stats.totalBookings} حجز',
+                              ),
+                              _whiteMetricTile(
+                                'نسبة الإشغال',
+                                '${stats.occupancyRate}%',
+                              ),
+                              _whiteMetricTile(
+                                'الملاعب النشطة',
+                                '${stats.activeFieldsCount} ملاعب',
+                              ),
                             ],
                           ),
                         ],
@@ -101,7 +116,9 @@ class _OwnerStatisticsView extends StatelessWidget {
                     Text(
                       'مخطط الإيرادات الشهرية',
                       style: AppTypography.title(
-                        color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                        color: isDark
+                            ? AppColors.textPrimaryDark
+                            : AppColors.textPrimaryLight,
                       ).copyWith(fontWeight: FontWeight.bold),
                     ),
                     SizedBox(height: 14.h),
@@ -110,7 +127,9 @@ class _OwnerStatisticsView extends StatelessWidget {
                     Container(
                       padding: EdgeInsets.all(18.w),
                       decoration: BoxDecoration(
-                        color: isDark ? AppColors.cardDark : AppColors.cardLight,
+                        color: isDark
+                            ? AppColors.cardDark
+                            : AppColors.cardLight,
                         borderRadius: BorderRadius.circular(20.r),
                         boxShadow: [
                           if (!isDark)
@@ -130,7 +149,10 @@ class _OwnerStatisticsView extends StatelessWidget {
                               crossAxisAlignment: CrossAxisAlignment.end,
                               children: stats.monthlyRevenue.map((dp) {
                                 final maxRev = 20000.0;
-                                final heightRatio = (dp.revenue / maxRev).clamp(0.15, 1.0);
+                                final heightRatio = (dp.revenue / maxRev).clamp(
+                                  0.15,
+                                  1.0,
+                                );
 
                                 return Column(
                                   mainAxisAlignment: MainAxisAlignment.end,
@@ -138,27 +160,41 @@ class _OwnerStatisticsView extends StatelessWidget {
                                     Text(
                                       '${(dp.revenue / 1000).toStringAsFixed(1)}k',
                                       style: AppTypography.small(
-                                        color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                                        color: isDark
+                                            ? AppColors.textSecondaryDark
+                                            : AppColors.textSecondaryLight,
                                       ).copyWith(fontSize: 10.sp),
                                     ),
                                     SizedBox(height: 4.h),
                                     AnimatedContainer(
-                                      duration: const Duration(milliseconds: 400),
+                                      duration: const Duration(
+                                        milliseconds: 400,
+                                      ),
                                       width: 22.w,
                                       height: 110.h * heightRatio,
                                       decoration: BoxDecoration(
                                         color: dp.month == 'يوليو'
                                             ? AppColors.primary
-                                            : AppColors.primary.withValues(alpha: 0.35),
-                                        borderRadius: BorderRadius.vertical(top: Radius.circular(8.r)),
+                                            : AppColors.primary.withValues(
+                                                alpha: 0.35,
+                                              ),
+                                        borderRadius: BorderRadius.vertical(
+                                          top: Radius.circular(8.r),
+                                        ),
                                       ),
                                     ),
                                     SizedBox(height: 6.h),
                                     Text(
                                       dp.month,
-                                      style: AppTypography.small(
-                                        color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
-                                      ).copyWith(fontWeight: FontWeight.bold, fontSize: 10.sp),
+                                      style:
+                                          AppTypography.small(
+                                            color: isDark
+                                                ? AppColors.textPrimaryDark
+                                                : AppColors.textPrimaryLight,
+                                          ).copyWith(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 10.sp,
+                                          ),
                                     ),
                                   ],
                                 );
@@ -175,7 +211,9 @@ class _OwnerStatisticsView extends StatelessWidget {
                     Text(
                       'أوقات الذروة والمباريات الأكثر طلباً',
                       style: AppTypography.title(
-                        color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                        color: isDark
+                            ? AppColors.textPrimaryDark
+                            : AppColors.textPrimaryLight,
                       ).copyWith(fontWeight: FontWeight.bold),
                     ),
                     SizedBox(height: 12.h),
@@ -183,16 +221,30 @@ class _OwnerStatisticsView extends StatelessWidget {
                     Container(
                       padding: EdgeInsets.all(16.w),
                       decoration: BoxDecoration(
-                        color: isDark ? AppColors.cardDark : AppColors.greyLight,
+                        color: isDark
+                            ? AppColors.cardDark
+                            : AppColors.greyLight,
                         borderRadius: BorderRadius.circular(18.r),
                       ),
                       child: Column(
                         children: [
-                          _peakHourRow('الساعة 19:00 - 20:00 (المساء)', '88% نسبة أشغال', isDark),
+                          _peakHourRow(
+                            'الساعة 19:00 - 20:00 (المساء)',
+                            '88% نسبة أشغال',
+                            isDark,
+                          ),
                           const Divider(height: 16),
-                          _peakHourRow('الساعة 21:00 - 22:00 (السهرة)', '94% نسبة أشغال', isDark),
+                          _peakHourRow(
+                            'الساعة 21:00 - 22:00 (السهرة)',
+                            '94% نسبة أشغال',
+                            isDark,
+                          ),
                           const Divider(height: 16),
-                          _peakHourRow('الساعة 17:00 - 18:00 (العصر)', '65% نسبة أشغال', isDark),
+                          _peakHourRow(
+                            'الساعة 17:00 - 18:00 (العصر)',
+                            '65% نسبة أشغال',
+                            isDark,
+                          ),
                         ],
                       ),
                     ),
@@ -213,7 +265,12 @@ class _OwnerStatisticsView extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(value, style: AppTypography.body(color: Colors.white).copyWith(fontWeight: FontWeight.bold)),
+        Text(
+          value,
+          style: AppTypography.body(
+            color: Colors.white,
+          ).copyWith(fontWeight: FontWeight.bold),
+        ),
         Text(label, style: AppTypography.small(color: Colors.white70)),
       ],
     );
@@ -225,27 +282,33 @@ class _OwnerStatisticsView extends StatelessWidget {
       children: [
         Row(
           children: [
-            Icon(Icons.access_time_filled, size: 18.sp, color: AppColors.primary),
+            Icon(
+              Icons.access_time_filled,
+              size: 18.sp,
+              color: AppColors.primary,
+            ),
             SizedBox(width: 8.w),
             Text(
               time,
               style: AppTypography.body(
-                color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
-              ).copyWith(fontWeight: FontWeight.bold),
+                color: isDark
+                    ? AppColors.textPrimaryDark
+                    : AppColors.textPrimaryLight,
+              ).copyWith(fontWeight: FontWeight.bold, fontSize: 13.sp),
             ),
           ],
         ),
         Container(
-          padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
+          padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 4.h),
           decoration: BoxDecoration(
             color: AppColors.primary.withValues(alpha: 0.15),
             borderRadius: BorderRadius.circular(10.r),
           ),
           child: Text(
             percentage,
-            style: AppTypography.caption(color: AppColors.primary).copyWith(
-              fontWeight: FontWeight.bold,
-            ),
+            style: AppTypography.caption(
+              color: AppColors.primary,
+            ).copyWith(fontSize: 12.sp, fontWeight: FontWeight.bold),
           ),
         ),
       ],

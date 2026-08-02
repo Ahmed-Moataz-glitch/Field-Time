@@ -12,7 +12,8 @@ import 'package:field_time/features/owner_dashboard/presentation/screens/add_edi
 import 'package:field_time/features/owner_dashboard/presentation/screens/owner_bookings_screen.dart';
 import 'package:field_time/features/owner_dashboard/presentation/screens/owner_dashboard_screen.dart';
 import 'package:field_time/features/owner_dashboard/presentation/screens/owner_statistics_screen.dart';
-
+import 'package:field_time/features/coupons/presentation/screens/create_coupon_screen.dart';
+import 'package:field_time/features/coupons/presentation/screens/manage_coupons_screen.dart';
 import 'package:field_time/features/notifications/presentation/screens/notifications_screen.dart';
 
 abstract class AppRouter {
@@ -32,6 +33,8 @@ abstract class AppRouter {
   static const String editField = '/edit-field/:id';
   static const String ownerBookings = '/owner-bookings';
   static const String ownerStats = '/owner-stats';
+  static const String manageCoupons = '/manage-coupons';
+  static const String createCoupon = '/create-coupon';
 
   static final router = GoRouter(
     navigatorKey: navigatorKey,
@@ -61,7 +64,11 @@ abstract class AppRouter {
       ),
       GoRoute(
         path: main,
-        builder: (context, state) => const MainLayoutScreen(),
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>?;
+          final initialIndex = extra?['initialIndex'] as int? ?? 0;
+          return MainLayoutScreen(initialIndex: initialIndex);
+        },
       ),
       GoRoute(
         path: fieldDetails,
@@ -115,6 +122,14 @@ abstract class AppRouter {
       GoRoute(
         path: ownerStats,
         builder: (context, state) => const OwnerStatisticsScreen(),
+      ),
+      GoRoute(
+        path: manageCoupons,
+        builder: (context, state) => const ManageCouponsScreen(),
+      ),
+      GoRoute(
+        path: createCoupon,
+        builder: (context, state) => const CreateCouponScreen(),
       ),
     ],
   );

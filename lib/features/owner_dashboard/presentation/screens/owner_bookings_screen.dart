@@ -142,14 +142,23 @@ class _OwnerBookingsViewState extends State<_OwnerBookingsView> {
                       );
                     }
 
-                    return ListView.separated(
-                      padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 8.h),
-                      itemCount: filtered.length,
-                      separatorBuilder: (context, index) => SizedBox(height: 12.h),
-                      itemBuilder: (context, index) {
-                        final booking = filtered[index];
-                        return _buildOwnerBookingCard(context, booking, isDark);
-                      },
+                    return SingleChildScrollView(
+                      child: Column(
+                        children: [
+                          ListView.separated(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 8.h),
+                            itemCount: filtered.length,
+                            separatorBuilder: (context, index) => SizedBox(height: 12.h),
+                            itemBuilder: (context, index) {
+                              final booking = filtered[index];
+                              return _buildOwnerBookingCard(context, booking, isDark);
+                            },
+                          ),
+                          SizedBox(height: 24.h),
+                        ],
+                      ),
                     );
                   }
                   return const SizedBox.shrink();
@@ -194,11 +203,15 @@ class _OwnerBookingsViewState extends State<_OwnerBookingsView> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                booking.fieldName,
-                style: AppTypography.title(
-                  color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
-                ).copyWith(fontWeight: FontWeight.bold),
+              Expanded(
+                child: Text(
+                  booking.fieldName,
+                  maxLines: 2,
+                  overflow: TextOverflow.clip,
+                  style: AppTypography.title(
+                    color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                  ).copyWith(fontWeight: FontWeight.bold),
+                ),
               ),
               Container(
                 padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),

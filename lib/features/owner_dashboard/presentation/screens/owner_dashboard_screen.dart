@@ -107,9 +107,12 @@ class _OwnerDashboardView extends StatelessWidget {
               final fields = state.fields;
               final bookings = state.bookings;
 
-              return SingleChildScrollView(
-                padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 16.h),
-                child: Column(
+              return RefreshIndicator(
+                onRefresh: () => context.read<OwnerDashboardCubit>().loadDashboardData(),
+                color: AppColors.primary,
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 16.h),
+                  child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // 1. Analytics KPI Cards Grid
@@ -154,37 +157,42 @@ class _OwnerDashboardView extends StatelessWidget {
 
                     SizedBox(height: 24.h),
 
-                    // 2. Quick Action Buttons Row
-                    Row(
+                    // 2. Quick Action Buttons Grid
+                    GridView.count(
+                      crossAxisCount: 2,
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      crossAxisSpacing: 10.w,
+                      mainAxisSpacing: 10.h,
+                      childAspectRatio: 2.1,
                       children: [
-                        Expanded(
-                          child: _actionTile(
-                            title: 'إضافة ملعب جديد',
-                            icon: Icons.add_business_outlined,
-                            color: AppColors.primary,
-                            isDark: isDark,
-                            onTap: () => context.push('/add-field'),
-                          ),
+                        _actionTile(
+                          title: 'إضافة ملعب جديد',
+                          icon: Icons.add_business_outlined,
+                          color: AppColors.primary,
+                          isDark: isDark,
+                          onTap: () => context.push('/add-field'),
                         ),
-                        SizedBox(width: 10.w),
-                        Expanded(
-                          child: _actionTile(
-                            title: 'إدارة الحجوزات',
-                            icon: Icons.calendar_month_outlined,
-                            color: Colors.blue,
-                            isDark: isDark,
-                            onTap: () => context.push('/owner-bookings'),
-                          ),
+                        _actionTile(
+                          title: 'إدارة الحجوزات',
+                          icon: Icons.calendar_month_outlined,
+                          color: Colors.blue,
+                          isDark: isDark,
+                          onTap: () => context.push('/owner-bookings'),
                         ),
-                        SizedBox(width: 10.w),
-                        Expanded(
-                          child: _actionTile(
-                            title: 'الإحصائيات',
-                            icon: Icons.bar_chart_outlined,
-                            color: Colors.purple,
-                            isDark: isDark,
-                            onTap: () => context.push('/owner-stats'),
-                          ),
+                        _actionTile(
+                          title: 'إدارة الكوبونات',
+                          icon: Icons.confirmation_number_outlined,
+                          color: Colors.orange,
+                          isDark: isDark,
+                          onTap: () => context.push('/manage-coupons'),
+                        ),
+                        _actionTile(
+                          title: 'الإحصائيات',
+                          icon: Icons.bar_chart_outlined,
+                          color: Colors.purple,
+                          isDark: isDark,
+                          onTap: () => context.push('/owner-stats'),
                         ),
                       ],
                     ),
@@ -278,8 +286,9 @@ class _OwnerDashboardView extends StatelessWidget {
                     SizedBox(height: 20.h),
                   ],
                 ),
-              );
-            } else if (state is OwnerDashboardError) {
+              ),
+            );
+          } else if (state is OwnerDashboardError) {
               return Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,

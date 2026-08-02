@@ -202,7 +202,12 @@ class _AddEditFieldViewState extends State<_AddEditFieldView> {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 16.h),
+          padding: EdgeInsets.only(
+            left: 20.w,
+            right: 20.w,
+            top: 16.h,
+            bottom: MediaQuery.of(context).viewInsets.bottom + 24.h,
+          ),
           child: Form(
             key: _formKey,
             child: Column(
@@ -254,6 +259,7 @@ class _AddEditFieldViewState extends State<_AddEditFieldView> {
                 ),
                 SizedBox(height: 12.h),
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(
                       child: CustomTextField(
@@ -292,6 +298,7 @@ class _AddEditFieldViewState extends State<_AddEditFieldView> {
                 ),
                 SizedBox(height: 14.h),
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(
                       child: CustomTextField(
@@ -350,6 +357,7 @@ class _AddEditFieldViewState extends State<_AddEditFieldView> {
 
                 SizedBox(height: 14.h),
                 SwitchListTile.adaptive(
+                  contentPadding: EdgeInsets.zero,
                   title: Text('هل الملعب مغطى / صالة؟', style: AppTypography.body(color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight)),
                   value: _isIndoor,
                   activeTrackColor: AppColors.primary,
@@ -400,8 +408,10 @@ class _AddEditFieldViewState extends State<_AddEditFieldView> {
                 ),
                 SizedBox(height: 12.h),
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(
+                      flex: 3,
                       child: CustomTextField(
                         controller: _imageUrlController,
                         hintText: 'رابط صورة الملعب (URL)',
@@ -409,14 +419,16 @@ class _AddEditFieldViewState extends State<_AddEditFieldView> {
                       ),
                     ),
                     SizedBox(width: 8.w),
-                    ElevatedButton(
-                      onPressed: _addImageUrl,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14.r)),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: _addImageUrl,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          padding: EdgeInsets.symmetric(horizontal: 16.w),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14.r)),
+                        ),
+                        child: const Text('إضافة', style: TextStyle(color: Colors.white)),
                       ),
-                      child: const Text('إضافة', style: TextStyle(color: Colors.white)),
                     ),
                   ],
                 ),

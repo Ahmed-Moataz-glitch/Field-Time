@@ -1,3 +1,5 @@
+import 'package:field_time/features/coupons/data/repositories/coupon_repository.dart';
+import 'package:field_time/features/coupons/presentation/cubit/coupon_management_cubit.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -58,16 +60,18 @@ class FieldTimeApp extends StatelessWidget {
     final bookingRepo = BookingRepository();
     final authRepo = AuthRepository();
     final notifRepo = NotificationRepository();
+    final couponRepo = CouponRepository();
 
     return MultiBlocProvider(
       providers: [
         BlocProvider(create: (_) => LocaleCubit()),
         BlocProvider(create: (_) => AuthCubit(authRepo)),
         BlocProvider(create: (_) => HomeCubit(fieldRepo)),
-        BlocProvider(create: (_) => BookingCubit(bookingRepo)),
+        BlocProvider(create: (_) => BookingCubit(repository: bookingRepo)),
         BlocProvider(create: (_) => ProfileCubit(authRepo)),
         BlocProvider(create: (_) => FavoritesCubit(fieldRepo)),
         BlocProvider(create: (_) => NotificationsCubit(notifRepo)),
+        BlocProvider(create: (_) => CouponManagementCubit(couponRepo)),
       ],
       child: ScreenUtilInit(
         designSize: const Size(375, 812),

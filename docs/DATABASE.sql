@@ -115,6 +115,12 @@ create table bookings(
 
     total_price numeric,
 
+    original_price numeric,
+
+    discount_amount numeric default 0,
+
+    coupon_code text,
+
     status text default 'confirmed',
 
     booking_code text unique,
@@ -184,3 +190,43 @@ create table notifications(
     created_at timestamptz default now()
 
 );
+
+----------------------------------------------------
+-- COUPONS
+----------------------------------------------------
+
+create table coupons(
+
+    id uuid primary key default gen_random_uuid(),
+
+    code text unique not null,
+
+    discount_type text not null default 'fixed', -- 'fixed' or 'percentage'
+
+    discount_value numeric not null,
+
+    min_booking_amount numeric default 0,
+
+    max_discount_amount numeric,
+
+    expires_at timestamptz,
+
+    is_active boolean default true,
+
+    usage_limit integer,
+
+    used_count integer default 0,
+
+    created_at timestamptz default now()
+
+);
+
+-- Seed Initial Coupons
+insert into coupons (code, discount_type, discount_value, min_booking_amount, expires_at)
+values 
+    ('FIELD20', 'percentage', 20, 100, now() + interval '30 days'),
+    ('OFFER50', 'fixed', 50, 200, now() + interval '30 days'),
+    ('WELCOME100', 'fixed', 100, 300, now() + interval '60 days'),
+    ('FREE100', 'percentage', 100, 0, now() + interval '90 days'),
+    ('FREEFIELD', 'free', 100, 0, now() + interval '90 days')
+on conflict (code) do nothing;

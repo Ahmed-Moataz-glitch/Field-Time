@@ -1,6 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:field_time/core/errors/failures.dart';
 import 'package:field_time/features/booking/data/models/booking_model.dart';
+import 'package:field_time/features/booking/data/repositories/booking_repository.dart';
 import 'package:field_time/features/home/data/models/field_model.dart';
 import 'package:field_time/features/owner_dashboard/data/models/owner_stats_model.dart';
 
@@ -66,47 +67,7 @@ class OwnerRepository {
     ),
   ];
 
-  static final List<BookingModel> _mockOwnerBookings = [
-    const BookingModel(
-      id: 'b-owner-1',
-      fieldId: 'field-1',
-      fieldName: 'أرينا سبورت (Arena Sport)',
-      fieldAddress: 'مدينة نصر - شارع الطيران',
-      fieldImage: 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&q=80&w=800',
-      date: '2026-07-31',
-      startTime: '19:00',
-      endTime: '20:00',
-      price: 350.0,
-      status: 'confirmed',
-      bookingCode: '#FT-2026-0731-0101',
-    ),
-    const BookingModel(
-      id: 'b-owner-2',
-      fieldId: 'field-1',
-      fieldName: 'أرينا سبورت (Arena Sport)',
-      fieldAddress: 'مدينة نصر - شارع الطيران',
-      fieldImage: 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&q=80&w=800',
-      date: '2026-07-31',
-      startTime: '21:00',
-      endTime: '22:00',
-      price: 350.0,
-      status: 'confirmed',
-      bookingCode: '#FT-2026-0731-0102',
-    ),
-    const BookingModel(
-      id: 'b-owner-3',
-      fieldId: 'field-2',
-      fieldName: 'جول ميكرز (Goal Makers)',
-      fieldAddress: 'التجمع الخامس - شارع التسعين',
-      fieldImage: 'https://images.unsplash.com/photo-1529900748604-07564a03e7a6?auto=format&fit=crop&q=80&w=800',
-      date: '2026-07-30',
-      startTime: '18:00',
-      endTime: '19:00',
-      price: 300.0,
-      status: 'completed',
-      bookingCode: '#FT-2026-0730-0089',
-    ),
-  ];
+
 
   Future<List<FieldModel>> getOwnerFields() async {
     try {
@@ -120,12 +81,12 @@ class OwnerRepository {
 
   Future<List<BookingModel>> getOwnerBookings() async {
     try {
-      final response = await _supabase.from('bookings').select('*');
+      final response = await _supabase.from('bookings').select('*, football_fields(name, address)').order('created_at', ascending: false);
       if ((response as List).isNotEmpty) {
         return response.map((item) => BookingModel.fromJson(item)).toList();
       }
     } catch (_) {}
-    return List.from(_mockOwnerBookings);
+    return await BookingRepository(supabase: _supabase).getBookings();
   }
 
   Future<OwnerStatsModel> getOwnerStats() async {
@@ -137,19 +98,23 @@ class OwnerRepository {
         .where((b) => b.status != 'cancelled')
         .fold(0.0, (sum, item) => sum + item.price);
 
+    final double occupancy = (bookings.isEmpty || fields.isEmpty)
+        ? 84.5
+        : ((bookings.length / (fields.length * 10)) * 100).clamp(10.0, 100.0);
+
     return OwnerStatsModel(
-      totalEarnings: totalEarnings > 0 ? totalEarnings : 14850.0,
-      totalBookings: bookings.isNotEmpty ? bookings.length : 42,
+      totalEarnings: totalEarnings,
+      totalBookings: bookings.length,
       activeFieldsCount: activeCount > 0 ? activeCount : fields.length,
-      occupancyRate: 84.5,
-      monthlyRevenue: const [
-        RevenueDataPoint(month: 'يناير', revenue: 12000.0),
-        RevenueDataPoint(month: 'فبراير', revenue: 13500.0),
-        RevenueDataPoint(month: 'مارس', revenue: 15000.0),
-        RevenueDataPoint(month: 'أبريل', revenue: 14200.0),
-        RevenueDataPoint(month: 'مايو', revenue: 16800.0),
-        RevenueDataPoint(month: 'يونيو', revenue: 18500.0),
-        RevenueDataPoint(month: 'يوليو', revenue: 14850.0),
+      occupancyRate: double.parse(occupancy.toStringAsFixed(1)),
+      monthlyRevenue: [
+        const RevenueDataPoint(month: 'يناير', revenue: 12000.0),
+        const RevenueDataPoint(month: 'فبراير', revenue: 13500.0),
+        const RevenueDataPoint(month: 'مارس', revenue: 15000.0),
+        const RevenueDataPoint(month: 'أبريل', revenue: 14200.0),
+        const RevenueDataPoint(month: 'مايو', revenue: 16800.0),
+        const RevenueDataPoint(month: 'يونيو', revenue: 18500.0),
+        RevenueDataPoint(month: 'يوليو', revenue: totalEarnings > 0 ? totalEarnings : 14850.0),
       ],
     );
   }

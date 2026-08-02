@@ -15,6 +15,7 @@ import 'package:field_time/features/home/data/models/field_model.dart';
 import 'package:field_time/features/home/data/repositories/field_repository.dart';
 import 'package:field_time/features/reviews/presentation/widgets/add_edit_review_bottom_sheet.dart';
 import 'package:field_time/features/favorites/presentation/cubit/favorites_cubit.dart';
+import 'package:field_time/features/booking/data/repositories/booking_repository.dart';
 
 class FieldDetailsScreen extends StatelessWidget {
   final String fieldId;
@@ -43,22 +44,36 @@ class _FieldDetailsView extends StatefulWidget {
 
 class _FieldDetailsViewState extends State<_FieldDetailsView> {
   late PageController _pageController;
+  Set<String> _bookedSlots = {};
 
-  final List<Map<String, dynamic>> _timeSlots = const [
-    {'time': '16:00', 'status': 'available'},
-    {'time': '17:00', 'status': 'available'},
-    {'time': '18:00', 'status': 'available'},
-    {'time': '19:00', 'status': 'booked'},
-    {'time': '20:00', 'status': 'available'},
-    {'time': '21:00', 'status': 'available'},
-    {'time': '22:00', 'status': 'booked'},
-    {'time': '23:00', 'status': 'available'},
+  final List<String> _availableTimes = const [
+    '16:00',
+    '17:00',
+    '18:00',
+    '19:00',
+    '20:00',
+    '21:00',
+    '22:00',
+    '23:00',
   ];
 
   @override
   void initState() {
     super.initState();
     _pageController = PageController();
+    _fetchBookedSlots(DateFormat('yyyy-MM-dd').format(DateTime.now()));
+  }
+
+  Future<void> _fetchBookedSlots(String date) async {
+    try {
+      final slots = await BookingRepository().getBookedSlots(
+        fieldId: widget.fieldId,
+        date: date,
+      );
+      if (mounted) {
+        setState(() => _bookedSlots = slots);
+      }
+    } catch (_) {}
   }
 
   @override
@@ -799,7 +814,10 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
               final isSelected = formattedKey == selectedDateStr;
 
               return GestureDetector(
-                onTap: () => context.read<FieldDetailsCubit>().selectDate(formattedKey),
+                onTap: () {
+                  context.read<FieldDetailsCubit>().selectDate(formattedKey);
+                  _fetchBookedSlots(formattedKey);
+                },
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
                   width: 70.w,
@@ -898,17 +916,16 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
             crossAxisSpacing: 10.w,
             childAspectRatio: 2.2,
           ),
-          itemCount: _timeSlots.length,
+          itemCount: _availableTimes.length,
           itemBuilder: (context, index) {
-            final slot = _timeSlots[index];
-            final timeStr = slot['time'] as String;
-            final status = slot['status'] as String;
-            final isSelected = timeStr == state.selectedTimeSlot;
+            final timeStr = _availableTimes[index];
+            final isBooked = _bookedSlots.contains(timeStr);
+            final isSelected = timeStr == state.selectedTimeSlot && !isBooked;
 
             Color bgColor;
             Color textColor;
 
-            if (status == 'booked') {
+            if (isBooked) {
               bgColor = isDark ? Colors.red.withValues(alpha: 0.2) : Colors.red.withValues(alpha: 0.1);
               textColor = AppColors.error;
             } else if (isSelected) {
@@ -920,7 +937,7 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
             }
 
             return GestureDetector(
-              onTap: status == 'booked'
+              onTap: isBooked
                   ? null
                   : () => context.read<FieldDetailsCubit>().selectTimeSlot(timeStr),
               child: AnimatedContainer(
@@ -930,14 +947,14 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
                   borderRadius: BorderRadius.circular(12.r),
                   border: isSelected
                       ? Border.all(color: AppColors.primaryDark, width: 2)
-                      : (status == 'booked' ? Border.all(color: AppColors.error.withValues(alpha: 0.3)) : null),
+                      : (isBooked ? Border.all(color: AppColors.error.withValues(alpha: 0.3)) : null),
                 ),
                 alignment: Alignment.center,
                 child: Text(
-                  timeStr,
+                  isBooked ? '$timeStr ❌' : timeStr,
                   style: AppTypography.caption(color: textColor).copyWith(
                     fontWeight: FontWeight.bold,
-                    decoration: status == 'booked' ? TextDecoration.lineThrough : null,
+                    decoration: isBooked ? TextDecoration.lineThrough : null,
                   ),
                 ),
               ),

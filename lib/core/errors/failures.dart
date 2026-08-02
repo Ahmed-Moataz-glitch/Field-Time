@@ -28,3 +28,8 @@ class NetworkFailure extends Failure {
 class DuplicateBookingFailure extends Failure {
   const DuplicateBookingFailure([super.message = 'هذا الموعد محجوز بالفعل! يرجى اختيار موعد آخر.']);
 }
+
+class CouponFailure extends Failure {
+  const CouponFailure([super.message = 'كوبون الخصم غير صالح أو منتهي الصلاحية']);
+}
+

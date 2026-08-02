@@ -5,7 +5,7 @@ import 'package:field_time/core/constants/app_colors.dart';
 import 'package:field_time/core/constants/app_typography.dart';
 import 'package:field_time/core/widgets/rating_badge.dart';
 import 'package:field_time/features/home/data/models/field_model.dart';
-import 'package:field_time/l10n/app_localizations.dart';
+import 'package:field_time/l10n/generated/app_localizations.dart';
 
 class FieldCard extends StatelessWidget {
   final FieldModel field;

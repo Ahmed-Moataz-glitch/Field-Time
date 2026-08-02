@@ -11,6 +11,7 @@ import 'package:field_time/core/widgets/custom_text_field.dart';
 import 'package:field_time/core/widgets/primary_button.dart';
 import 'package:field_time/features/booking/presentation/cubit/booking_cubit.dart';
 import 'package:field_time/features/booking/presentation/cubit/booking_state.dart';
+import 'package:field_time/features/coupons/data/models/coupon_model.dart';
 import 'package:field_time/l10n/generated/app_localizations.dart';
 
 class BookingScreen extends StatefulWidget {
@@ -42,11 +43,13 @@ class _BookingScreenState extends State<BookingScreen> {
   late String _selectedTimeSlot;
   final TextEditingController _couponController = TextEditingController();
 
+  CouponModel? _appliedCoupon;
   double _discountAmount = 0.0;
-  bool _isCouponApplied = false;
+  bool _isApplyingCoupon = false;
   bool _isLoading = false;
+  Set<String> _bookedSlots = {};
 
-  final List<String> _availableSlots = const [
+  final List<String> _allSlots = const [
     '16:00',
     '17:00',
     '18:00',
@@ -63,12 +66,25 @@ class _BookingScreenState extends State<BookingScreen> {
     final todayStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
     _selectedDate = widget.initialDate ?? todayStr;
     _selectedTimeSlot = widget.initialTimeSlot ?? '19:00';
+    _fetchBookedSlots(_selectedDate);
   }
 
   @override
   void dispose() {
     _couponController.dispose();
     super.dispose();
+  }
+
+  Future<void> _fetchBookedSlots(String date) async {
+    final slots = await context.read<BookingCubit>().loadBookedSlots(
+          fieldId: widget.fieldId,
+          date: date,
+        );
+    if (mounted) {
+      setState(() {
+        _bookedSlots = slots;
+      });
+    }
   }
 
   List<DateTime> _getAvailableDates() {
@@ -83,30 +99,40 @@ class _BookingScreenState extends State<BookingScreen> {
     return isArabic ? arabicDays[dayIndex] : englishDays[dayIndex];
   }
 
-  void _applyCoupon(bool isArabic) {
-    final code = _couponController.text.trim().toUpperCase();
-    if (code == 'FIELD20' || code == 'OFFER50') {
+  Future<void> _applyCoupon() async {
+    final code = _couponController.text.trim();
+    if (code.isEmpty) return;
+
+    setState(() => _isApplyingCoupon = true);
+    final coupon = await context.read<BookingCubit>().applyCoupon(
+          code: code,
+          currentPrice: widget.price,
+        );
+    setState(() => _isApplyingCoupon = false);
+
+    if (coupon != null && mounted) {
+      final discount = coupon.calculateDiscount(widget.price);
       setState(() {
-        _discountAmount = 50.0;
-        _isCouponApplied = true;
+        _appliedCoupon = coupon;
+        _discountAmount = discount;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(isArabic ? 'تم تطبيق خصم 50 جنيه بنجاح! 🎉' : '50 EGP discount applied successfully! 🎉'),
-          backgroundColor: AppColors.success,
-        ),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(isArabic ? 'كوبون غير صالح أو منتهي الصلاحية' : 'Invalid or expired promo code'),
-          backgroundColor: AppColors.error,
-        ),
-      );
     }
   }
 
   Future<void> _handleConfirmBooking(bool isArabic) async {
+    // Prevent booking if selected slot is already booked
+    if (_bookedSlots.contains(_selectedTimeSlot)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(isArabic
+              ? 'عذراً، هذا الموعد ($_selectedTimeSlot) محجوز بالفعل! يرجى اختيار موعد آخر.'
+              : 'Sorry, this slot ($_selectedTimeSlot) is already booked!'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+
     setState(() => _isLoading = true);
 
     final endHour = int.parse(_selectedTimeSlot.split(':')[0]) + 1;
@@ -121,48 +147,16 @@ class _BookingScreenState extends State<BookingScreen> {
           date: _selectedDate,
           timeSlot: timeSlotFormatted,
           price: finalPrice,
+          originalPrice: widget.price,
+          discountAmount: _discountAmount,
+          couponCode: _appliedCoupon?.code,
+          couponId: _appliedCoupon?.id,
         );
 
     setState(() => _isLoading = false);
 
     if (booking != null && mounted) {
       context.push('/booking-success');
-    } else if (mounted) {
-      showDialog(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
-          title: Row(
-            children: [
-              Icon(Icons.warning_amber_rounded, color: AppColors.error, size: 28.sp),
-              SizedBox(width: 8.w),
-              Expanded(
-                child: Text(
-                  isArabic ? 'تنبيه الحجز' : 'Booking Alert',
-                  style: AppTypography.title(color: AppColors.error).copyWith(fontWeight: FontWeight.bold),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
-          content: Text(
-            isArabic
-                ? 'هذا الموعد ($timeSlotFormatted بتاريخ $_selectedDate) محجوز بالفعل! يرجى اختيار موعد آخر.'
-                : 'The slot ($timeSlotFormatted on $_selectedDate) is already booked! Please select another time.',
-            style: AppTypography.body(color: AppColors.textPrimaryLight),
-          ),
-          actions: [
-            ElevatedButton(
-              onPressed: () => Navigator.pop(ctx),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
-              ),
-              child: Text(isArabic ? 'تغيير الموعد' : 'Change Slot', style: const TextStyle(color: Colors.white)),
-            ),
-          ],
-        ),
-      );
     }
   }
 
@@ -189,6 +183,22 @@ class _BookingScreenState extends State<BookingScreen> {
         child: BlocListener<BookingCubit, BookingState>(
           listener: (context, state) {
             if (state is BookingDuplicateError) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(state.message),
+                  backgroundColor: AppColors.error,
+                ),
+              );
+            } else if (state is CouponAppliedState) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(isArabic
+                      ? 'تم تطبيق الخصم بنجاح! 🎉 (${state.discountAmount.toInt()} ج.م)'
+                      : 'Coupon applied successfully! 🎉 (${state.discountAmount.toInt()} EGP)'),
+                  backgroundColor: AppColors.success,
+                ),
+              );
+            } else if (state is CouponErrorState) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(state.message),
@@ -225,6 +235,10 @@ class _BookingScreenState extends State<BookingScreen> {
                           width: 80.w,
                           height: 80.h,
                           fit: BoxFit.cover,
+                          errorWidget: (ctx, url, err) => Container(
+                            color: AppColors.greyLight,
+                            child: const Icon(Icons.sports_soccer, color: AppColors.primary),
+                          ),
                         ),
                       ),
                       SizedBox(width: 14.w),
@@ -295,7 +309,10 @@ class _BookingScreenState extends State<BookingScreen> {
                       final isSelected = dateKey == _selectedDate;
 
                       return GestureDetector(
-                        onTap: () => setState(() => _selectedDate = dateKey),
+                        onTap: () {
+                          setState(() => _selectedDate = dateKey);
+                          _fetchBookedSlots(dateKey);
+                        },
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 200),
                           width: 68.w,
@@ -338,12 +355,22 @@ class _BookingScreenState extends State<BookingScreen> {
 
                 SizedBox(height: 24.h),
 
-                // 3. Select Time Slot Grid
-                Text(
-                  l10n?.chooseTime ?? (isArabic ? 'اختر الموعد' : 'Select Time Slot'),
-                  style: AppTypography.title(
-                    color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
-                  ).copyWith(fontWeight: FontWeight.bold),
+                // 3. Select Time Slot Grid with Booked Status
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      l10n?.chooseTime ?? (isArabic ? 'اختر الموعد' : 'Select Time Slot'),
+                      style: AppTypography.title(
+                        color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                      ).copyWith(fontWeight: FontWeight.bold),
+                    ),
+                    if (_bookedSlots.isNotEmpty)
+                      Text(
+                        isArabic ? '(${_bookedSlots.length} موعد محجوز)' : '(${_bookedSlots.length} slots booked)',
+                        style: AppTypography.caption(color: AppColors.error),
+                      ),
+                  ],
                 ),
                 SizedBox(height: 12.h),
                 GridView.builder(
@@ -355,29 +382,38 @@ class _BookingScreenState extends State<BookingScreen> {
                     crossAxisSpacing: 10.w,
                     childAspectRatio: 1.8,
                   ),
-                  itemCount: _availableSlots.length,
+                  itemCount: _allSlots.length,
                   itemBuilder: (context, index) {
-                    final slot = _availableSlots[index];
-                    final isSelected = slot == _selectedTimeSlot;
+                    final slot = _allSlots[index];
+                    final isBooked = _bookedSlots.contains(slot);
+                    final isSelected = slot == _selectedTimeSlot && !isBooked;
 
                     return GestureDetector(
-                      onTap: () => setState(() => _selectedTimeSlot = slot),
+                      onTap: isBooked ? null : () => setState(() => _selectedTimeSlot = slot),
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 150),
                         decoration: BoxDecoration(
-                          color: isSelected
-                              ? AppColors.primary
-                              : (isDark ? AppColors.cardDark : AppColors.greyLight),
+                          color: isBooked
+                              ? (isDark ? Colors.red.withValues(alpha: 0.2) : Colors.red.shade100)
+                              : isSelected
+                                  ? AppColors.primary
+                                  : (isDark ? AppColors.cardDark : AppColors.greyLight),
                           borderRadius: BorderRadius.circular(12.r),
+                          border: isBooked ? Border.all(color: AppColors.error.withValues(alpha: 0.5)) : null,
                         ),
                         alignment: Alignment.center,
                         child: Text(
-                          slot,
+                          isBooked ? '$slot ❌' : slot,
                           style: AppTypography.caption(
-                            color: isSelected
-                                ? Colors.white
-                                : (isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight),
-                          ).copyWith(fontWeight: FontWeight.bold),
+                            color: isBooked
+                                ? AppColors.error
+                                : isSelected
+                                    ? Colors.white
+                                    : (isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight),
+                          ).copyWith(
+                            fontWeight: FontWeight.bold,
+                            decoration: isBooked ? TextDecoration.lineThrough : null,
+                          ),
                         ),
                       ),
                     );
@@ -386,7 +422,7 @@ class _BookingScreenState extends State<BookingScreen> {
 
                 SizedBox(height: 24.h),
 
-                // 4. Promo Coupon Box
+                // 4. Real Backend Promo Coupon Box
                 Text(
                   isArabic ? 'كوبون الخصم' : 'Promo Code',
                   style: AppTypography.title(
@@ -397,29 +433,37 @@ class _BookingScreenState extends State<BookingScreen> {
                 Row(
                   children: [
                     Expanded(
+                      flex: 3,
                       child: CustomTextField(
                         controller: _couponController,
-                        hintText: isArabic ? 'أدخل رمز الخصم (FIELD20)' : 'Enter code (e.g. FIELD20)',
+                        hintText: isArabic ? 'أدخل الكود (FIELD20, OFFER50)' : 'Enter code (e.g. FIELD20)',
                         prefixIcon: const Icon(Icons.confirmation_number_outlined),
                       ),
                     ),
                     SizedBox(width: 10.w),
                     Expanded(
+                      flex: 2,
                       child: ElevatedButton(
-                        onPressed: _isCouponApplied ? null : () => _applyCoupon(isArabic),
+                        onPressed: (_appliedCoupon != null || _isApplyingCoupon) ? null : _applyCoupon,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
                           padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 14.h),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14.r)),
                         ),
-                        child: Text(
-                          _isCouponApplied
-                              ? (isArabic ? 'تم' : 'Applied')
-                              : (isArabic ? 'تطبيق' : 'Apply'),
-                          style: AppTypography.caption(color: Colors.white).copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                        child: _isApplyingCoupon
+                            ? SizedBox(
+                                width: 18.w,
+                                height: 18.h,
+                                child: const CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                              )
+                            : Text(
+                                _appliedCoupon != null
+                                    ? (isArabic ? 'تم التطبيق ✓' : 'Applied ✓')
+                                    : (isArabic ? 'تطبيق' : 'Apply'),
+                                style: AppTypography.caption(color: Colors.white).copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                       ),
                     ),
                   ],
@@ -427,7 +471,7 @@ class _BookingScreenState extends State<BookingScreen> {
 
                 SizedBox(height: 28.h),
 
-                // 5. Price Breakdown Card
+                // 5. Dynamic Price Breakdown Card
                 Container(
                   padding: EdgeInsets.all(18.w),
                   decoration: BoxDecoration(
@@ -447,7 +491,9 @@ class _BookingScreenState extends State<BookingScreen> {
                       if (_discountAmount > 0) ...[
                         SizedBox(height: 8.h),
                         _priceRow(
-                          isArabic ? 'خصم الكوبون' : 'Coupon Discount',
+                          isArabic
+                              ? 'خصم الكوبون (${_appliedCoupon?.code})'
+                              : 'Coupon Discount (${_appliedCoupon?.code})',
                           isArabic ? '-${_discountAmount.toInt()} ج.م' : '-${_discountAmount.toInt()} EGP',
                           isDark,
                           isDiscount: true,
@@ -478,8 +524,12 @@ class _BookingScreenState extends State<BookingScreen> {
                           ),
                           SizedBox(width: 8.w),
                           Text(
-                            isArabic ? '${totalPrice.toInt()} جنيه' : '${totalPrice.toInt()} EGP',
-                            style: AppTypography.heading2(color: AppColors.primary).copyWith(
+                            totalPrice <= 0
+                                ? (isArabic ? 'مجاناً 🎉' : 'FREE 🎉')
+                                : (isArabic ? '${totalPrice.toInt()} جنيه' : '${totalPrice.toInt()} EGP'),
+                            style: AppTypography.heading2(
+                              color: totalPrice <= 0 ? AppColors.success : AppColors.primary,
+                            ).copyWith(
                               fontWeight: FontWeight.bold,
                             ),
                           ),

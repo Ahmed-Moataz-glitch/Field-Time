@@ -75,9 +75,9 @@ class AuthRepository {
       };
 
       try {
-        await _supabase.from('profiles').upsert(profileMap);
+        await _supabase.from('users').upsert(profileMap);
       } catch (e) {
-        if (kDebugMode) print('Profile upsert warning: $e');
+        if (kDebugMode) print('User profile upsert warning: $e');
       }
 
       return UserModel.fromSupabase(user, profileMap);
@@ -120,7 +120,7 @@ class AuthRepository {
   Future<Map<String, dynamic>?> _fetchProfile(String userId) async {
     try {
       final data = await _supabase
-          .from('profiles')
+          .from('users')
           .select()
           .eq('id', userId)
           .maybeSingle();
@@ -145,7 +145,7 @@ class AuthRepository {
         await _supabase.auth.updateUser(UserAttributes(
           data: {'full_name': fullName, 'phone': phone, 'city': city},
         ));
-        await _supabase.from('profiles').upsert({
+        await _supabase.from('users').upsert({
           'id': user.id,
           'full_name': fullName,
           'phone': phone,
@@ -183,7 +183,7 @@ class AuthRepository {
         await _supabase.auth.updateUser(UserAttributes(
           data: {'avatar_url': avatarUrl},
         ));
-        await _supabase.from('profiles').upsert({
+        await _supabase.from('users').upsert({
           'id': user.id,
           'avatar_url': avatarUrl,
         });
