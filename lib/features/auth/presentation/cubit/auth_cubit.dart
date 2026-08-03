@@ -63,12 +63,41 @@ class AuthCubit extends Cubit<AuthState> {
     }
   }
 
-  /// Reset password request
-  Future<void> resetPassword(String email) async {
+  /// Send OTP to email for password reset
+  Future<void> sendResetOtp(String email) async {
     emit(AuthLoading());
     try {
-      await _repository.resetPassword(email);
-      emit(PasswordResetSent(email));
+      await _repository.sendPasswordResetOtp(email);
+      emit(PasswordResetOtpSent(email));
+    } on Failure catch (failure) {
+      emit(AuthError(failure.message));
+    } catch (e) {
+      emit(AuthError(e.toString()));
+    }
+  }
+
+  /// Verify 6-digit OTP code for password reset
+  Future<void> verifyResetOtp({
+    required String email,
+    required String otp,
+  }) async {
+    emit(AuthLoading());
+    try {
+      await _repository.verifyPasswordResetOtp(email: email, otp: otp);
+      emit(PasswordResetOtpVerified(email, otp));
+    } on Failure catch (failure) {
+      emit(AuthError(failure.message));
+    } catch (e) {
+      emit(AuthError(e.toString()));
+    }
+  }
+
+  /// Confirm and set new password after OTP verification
+  Future<void> confirmNewPassword(String newPassword) async {
+    emit(AuthLoading());
+    try {
+      await _repository.updateForgottenPassword(newPassword);
+      emit(PasswordResetSuccess());
     } on Failure catch (failure) {
       emit(AuthError(failure.message));
     } catch (e) {

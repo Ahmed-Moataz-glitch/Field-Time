@@ -1,14 +1,15 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:field_time/core/constants/app_colors.dart';
 import 'package:field_time/core/constants/app_typography.dart';
+import 'package:field_time/core/widgets/app_image.dart';
 import 'package:field_time/core/localization/locale_cubit.dart';
 import 'package:field_time/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:field_time/features/profile/presentation/cubit/profile_cubit.dart';
 import 'package:field_time/features/profile/presentation/cubit/profile_state.dart';
+import 'package:field_time/features/owner_dashboard/presentation/widgets/owner_password_dialog.dart';
 import 'package:field_time/features/profile/presentation/widgets/change_avatar_sheet.dart';
 import 'package:field_time/features/profile/presentation/widgets/change_password_sheet.dart';
 import 'package:field_time/features/profile/presentation/widgets/edit_profile_sheet.dart';
@@ -201,8 +202,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               border: Border.all(color: AppColors.primary, width: 3.w),
                             ),
                             child: ClipOval(
-                              child: CachedNetworkImage(
-                                imageUrl: avatar,
+                              child: AppImage(
+                                imagePath: avatar,
                                 fit: BoxFit.cover,
                               ),
                             ),
@@ -264,7 +265,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           title: isArabic ? 'لوحة تحكم صاحب الملعب' : 'Field Owner Dashboard',
                           textColor: AppColors.primary,
                           iconColor: AppColors.primary,
-                          onTap: () => context.push('/owner-dashboard'),
+                          onTap: () async {
+                            final authenticated = await OwnerPasswordDialog.show(context);
+                            if (authenticated && context.mounted) {
+                              context.push('/owner-dashboard');
+                            }
+                          },
                           isDark: isDark,
                         ),
                         const Divider(height: 1, color: AppColors.greyBorder),

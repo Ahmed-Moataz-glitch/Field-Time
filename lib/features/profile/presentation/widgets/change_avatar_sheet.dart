@@ -1,8 +1,9 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:field_time/core/constants/app_colors.dart';
 import 'package:field_time/core/constants/app_typography.dart';
+import 'package:field_time/core/services/image_picker_service.dart';
+import 'package:field_time/core/widgets/app_image.dart';
 import 'package:field_time/core/widgets/primary_button.dart';
 
 class ChangeAvatarSheet extends StatefulWidget {
@@ -21,8 +22,8 @@ class ChangeAvatarSheet extends StatefulWidget {
 
 class _ChangeAvatarSheetState extends State<ChangeAvatarSheet> {
   late String _selectedUrl;
-  final TextEditingController _customUrlController = TextEditingController();
   bool _isSubmitting = false;
+  final ImagePickerService _pickerService = ImagePickerService();
 
   final List<String> _presetAvatars = const [
     'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400',
@@ -39,19 +40,18 @@ class _ChangeAvatarSheetState extends State<ChangeAvatarSheet> {
     _selectedUrl = widget.currentAvatar;
   }
 
-  @override
-  void dispose() {
-    _customUrlController.dispose();
-    super.dispose();
+  void _pickCustomImage() async {
+    final pickedPath = await _pickerService.showImageSourceSheet(context);
+    if (pickedPath != null) {
+      setState(() {
+        _selectedUrl = pickedPath;
+      });
+    }
   }
 
   void _submit() async {
-    final finalUrl = _customUrlController.text.trim().isNotEmpty
-        ? _customUrlController.text.trim()
-        : _selectedUrl;
-
     setState(() => _isSubmitting = true);
-    await widget.onSelected(finalUrl);
+    await widget.onSelected(_selectedUrl);
     if (mounted) {
       Navigator.of(context).pop();
     }
@@ -89,13 +89,59 @@ class _ChangeAvatarSheetState extends State<ChangeAvatarSheet> {
             ),
             SizedBox(height: 8.h),
             Text(
-              'اختر من الصور الرمزية الجاهزة أو ادخل رابط صورة خارجي',
+              'التقط صورة بالكاميرا، اختر من المعرض، أو حدد رمزا جاهزا',
               style: AppTypography.caption(
                 color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
               ),
               textAlign: TextAlign.center,
             ),
             SizedBox(height: 20.h),
+
+            // Current Preview if custom image selected
+            Container(
+              width: 90.w,
+              height: 90.w,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: AppColors.primary, width: 3.w),
+              ),
+              child: ClipOval(
+                child: AppImage(
+                  imagePath: _selectedUrl,
+                  width: 90.w,
+                  height: 90.w,
+                  fit: BoxFit.cover,
+                ),
+              ),
+            ),
+            SizedBox(height: 16.h),
+
+            // Button to pick image from camera/gallery
+            OutlinedButton.icon(
+              onPressed: _pickCustomImage,
+              icon: const Icon(Icons.add_a_photo_outlined, color: AppColors.primary),
+              label: Text(
+                'التقاط أو اختيار صورة جديدة',
+                style: AppTypography.body(color: AppColors.primary).copyWith(fontWeight: FontWeight.bold),
+              ),
+              style: OutlinedButton.styleFrom(
+                padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 12.h),
+                side: const BorderSide(color: AppColors.primary),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
+              ),
+            ),
+            SizedBox(height: 24.h),
+
+            Align(
+              alignment: Alignment.centerRight,
+              child: Text(
+                'أو اختر رمزاً إفتراضياً:',
+                style: AppTypography.caption(
+                  color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                ),
+              ),
+            ),
+            SizedBox(height: 12.h),
 
             // Grid of preset avatars
             GridView.builder(
@@ -116,7 +162,6 @@ class _ChangeAvatarSheetState extends State<ChangeAvatarSheet> {
                   onTap: () {
                     setState(() {
                       _selectedUrl = url;
-                      _customUrlController.clear();
                     });
                   },
                   child: AnimatedContainer(
@@ -129,33 +174,14 @@ class _ChangeAvatarSheetState extends State<ChangeAvatarSheet> {
                       ),
                     ),
                     child: ClipOval(
-                      child: CachedNetworkImage(
-                        imageUrl: url,
+                      child: AppImage(
+                        imagePath: url,
                         fit: BoxFit.cover,
                       ),
                     ),
                   ),
                 );
               },
-            ),
-            SizedBox(height: 20.h),
-
-            // Custom image URL input
-            TextFormField(
-              controller: _customUrlController,
-              style: AppTypography.body(
-                color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
-              ),
-              decoration: InputDecoration(
-                hintText: 'أو أدخل رابط صورة خارجي (URL)...',
-                hintStyle: AppTypography.caption(
-                  color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
-                ),
-                prefixIcon: Icon(Icons.link_rounded, color: AppColors.primary, size: 20.sp),
-                filled: true,
-                fillColor: isDark ? AppColors.cardDark : AppColors.greyLight,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(16.r), borderSide: BorderSide.none),
-              ),
             ),
             SizedBox(height: 24.h),
 

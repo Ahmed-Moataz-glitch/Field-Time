@@ -1,10 +1,11 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:field_time/core/constants/app_colors.dart';
 import 'package:field_time/core/constants/app_typography.dart';
+import 'package:field_time/core/services/image_picker_service.dart';
+import 'package:field_time/core/widgets/app_image.dart';
 import 'package:field_time/core/widgets/custom_text_field.dart';
 import 'package:field_time/core/widgets/primary_button.dart';
 import 'package:field_time/features/home/data/models/field_model.dart';
@@ -47,7 +48,8 @@ class _AddEditFieldViewState extends State<_AddEditFieldView> {
   final TextEditingController _priceController = TextEditingController();
   final TextEditingController _oldPriceController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
-  final TextEditingController _imageUrlController = TextEditingController();
+
+  final ImagePickerService _pickerService = ImagePickerService();
 
   String _selectedCity = 'القاهرة';
   String _selectedFieldType = 'خماسي';
@@ -126,21 +128,20 @@ class _AddEditFieldViewState extends State<_AddEditFieldView> {
     _priceController.dispose();
     _oldPriceController.dispose();
     _phoneController.dispose();
-    _imageUrlController.dispose();
     super.dispose();
   }
 
-  void _addImageUrl() {
-    final url = _imageUrlController.text.trim();
-    if (url.isNotEmpty && url.startsWith('http')) {
-      setState(() {
-        _images.add(url);
-        _imageUrlController.clear();
-      });
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('يرجى إدخال رابط صورة صحيح يبدأ بـ http')),
-      );
+  Future<void> _pickImageFromCamera() async {
+    final path = await _pickerService.pickImageFromCamera();
+    if (path != null) {
+      setState(() => _images.add(path));
+    }
+  }
+
+  Future<void> _pickImagesFromGallery() async {
+    final paths = await _pickerService.pickMultipleImagesFromGallery();
+    if (paths.isNotEmpty) {
+      setState(() => _images.addAll(paths));
     }
   }
 
@@ -408,33 +409,37 @@ class _AddEditFieldViewState extends State<_AddEditFieldView> {
                 ),
                 SizedBox(height: 12.h),
                 Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(
-                      flex: 3,
-                      child: CustomTextField(
-                        controller: _imageUrlController,
-                        hintText: 'رابط صورة الملعب (URL)',
-                        prefixIcon: const Icon(Icons.image_outlined),
-                      ),
-                    ),
-                    SizedBox(width: 8.w),
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: _addImageUrl,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          padding: EdgeInsets.symmetric(horizontal: 16.w),
+                      child: OutlinedButton.icon(
+                        onPressed: _pickImageFromCamera,
+                        icon: const Icon(Icons.camera_alt_outlined, color: AppColors.primary),
+                        label: Text('الكاميرا', style: AppTypography.caption(color: AppColors.primary).copyWith(fontWeight: FontWeight.bold)),
+                        style: OutlinedButton.styleFrom(
+                          padding: EdgeInsets.symmetric(vertical: 12.h),
+                          side: const BorderSide(color: AppColors.primary),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14.r)),
                         ),
-                        child: const Text('إضافة', style: TextStyle(color: Colors.white)),
+                      ),
+                    ),
+                    SizedBox(width: 12.w),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: _pickImagesFromGallery,
+                        icon: const Icon(Icons.photo_library_outlined, color: Colors.white),
+                        label: Text('معرض الصور', style: AppTypography.caption(color: Colors.white).copyWith(fontWeight: FontWeight.bold)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          padding: EdgeInsets.symmetric(vertical: 12.h),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14.r)),
+                        ),
                       ),
                     ),
                   ],
                 ),
-                SizedBox(height: 12.h),
+                SizedBox(height: 14.h),
                 SizedBox(
-                  height: 80.h,
+                  height: 90.h,
                   child: ListView.builder(
                     scrollDirection: Axis.horizontal,
                     itemCount: _images.length,
@@ -443,22 +448,19 @@ class _AddEditFieldViewState extends State<_AddEditFieldView> {
                         children: [
                           Container(
                             margin: EdgeInsets.only(left: 10.w),
-                            width: 80.w,
-                            height: 80.h,
-                            decoration: BoxDecoration(
+                            width: 90.w,
+                            height: 90.h,
+                            child: AppImage(
+                              imagePath: _images[index],
+                              width: 90.w,
+                              height: 90.h,
+                              fit: BoxFit.cover,
                               borderRadius: BorderRadius.circular(12.r),
-                            ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(12.r),
-                              child: CachedNetworkImage(
-                                imageUrl: _images[index],
-                                fit: BoxFit.cover,
-                              ),
                             ),
                           ),
                           Positioned(
-                            top: 2,
-                            left: 2,
+                            top: 4,
+                            left: 4,
                             child: GestureDetector(
                               onTap: () {
                                 if (_images.length > 1) {
@@ -466,9 +468,9 @@ class _AddEditFieldViewState extends State<_AddEditFieldView> {
                                 }
                               },
                               child: CircleAvatar(
-                                radius: 10.r,
+                                radius: 11.r,
                                 backgroundColor: Colors.red,
-                                child: Icon(Icons.close, size: 12.sp, color: Colors.white),
+                                child: Icon(Icons.close, size: 13.sp, color: Colors.white),
                               ),
                             ),
                           ),

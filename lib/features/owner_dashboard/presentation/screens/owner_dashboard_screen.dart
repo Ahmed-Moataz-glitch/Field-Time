@@ -5,6 +5,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:field_time/core/constants/app_colors.dart';
 import 'package:field_time/core/constants/app_typography.dart';
+import 'package:field_time/core/widgets/custom_text_field.dart';
+import 'package:field_time/core/widgets/primary_button.dart';
 import 'package:field_time/features/booking/data/models/booking_model.dart';
 import 'package:field_time/features/home/data/models/field_model.dart';
 import 'package:field_time/features/owner_dashboard/data/repositories/owner_repository.dart';
@@ -23,8 +25,40 @@ class OwnerDashboardScreen extends StatelessWidget {
   }
 }
 
-class _OwnerDashboardView extends StatelessWidget {
+class _OwnerDashboardView extends StatefulWidget {
   const _OwnerDashboardView();
+
+  @override
+  State<_OwnerDashboardView> createState() => _OwnerDashboardViewState();
+}
+
+class _OwnerDashboardViewState extends State<_OwnerDashboardView> {
+  bool _isAuthenticated = false;
+  final TextEditingController _passController = TextEditingController();
+  bool _obscurePass = true;
+  String? _passError;
+
+  static const String _requiredPassword = 'GLITCH TECH';
+
+  @override
+  void dispose() {
+    _passController.dispose();
+    super.dispose();
+  }
+
+  void _checkPassword() {
+    final input = _passController.text.trim();
+    if (input == _requiredPassword) {
+      setState(() {
+        _isAuthenticated = true;
+        _passError = null;
+      });
+    } else {
+      setState(() {
+        _passError = 'كلمة المرور غير صحيحة! يرجى إدخال GLITCH TECH';
+      });
+    }
+  }
 
   void _showDeleteDialog(BuildContext context, FieldModel field) {
     showDialog(
@@ -60,6 +94,96 @@ class _OwnerDashboardView extends StatelessWidget {
     );
   }
 
+  Widget _buildPasswordGate(bool isDark) {
+    return Center(
+      child: SingleChildScrollView(
+        padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 20.h),
+        child: Container(
+          padding: EdgeInsets.all(24.w),
+          decoration: BoxDecoration(
+            color: isDark ? AppColors.cardDark : AppColors.cardLight,
+            borderRadius: BorderRadius.circular(24.r),
+            boxShadow: [
+              if (!isDark)
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.05),
+                  blurRadius: 16,
+                  offset: const Offset(0, 4),
+                ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: EdgeInsets.all(16.w),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.shield_outlined,
+                  color: AppColors.primary,
+                  size: 40.sp,
+                ),
+              ),
+              SizedBox(height: 16.h),
+              Text(
+                'حماية لوحة التحكم',
+                style: AppTypography.heading3(
+                  color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                ).copyWith(fontWeight: FontWeight.bold),
+              ),
+              SizedBox(height: 8.h),
+              Text(
+                'يرجى إدخال كلمة مرور صاحب الملعب للوصول إلى البيانات الإحصائية والملاعب',
+                style: AppTypography.caption(
+                  color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: 24.h),
+              CustomTextField(
+                controller: _passController,
+                hintText: 'أدخل كلمة المرور (GLITCH TECH)...',
+                isPassword: _obscurePass,
+                prefixIcon: const Icon(Icons.key_outlined),
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _obscurePass ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                    color: AppColors.iconGrey,
+                  ),
+                  onPressed: () => setState(() => _obscurePass = !_obscurePass),
+                ),
+                onChanged: (_) {
+                  if (_passError != null) {
+                    setState(() => _passError = null);
+                  }
+                },
+              ),
+              if (_passError != null) ...[
+                SizedBox(height: 8.h),
+                Text(
+                  _passError!,
+                  style: AppTypography.small(color: AppColors.error),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+              SizedBox(height: 24.h),
+              SizedBox(
+                width: double.infinity,
+                child: PrimaryButton(
+                  title: 'تأكيد الدخول',
+                  onPressed: _checkPassword,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -74,14 +198,17 @@ class _OwnerDashboardView extends StatelessWidget {
         ),
         centerTitle: true,
         actions: [
-          IconButton(
-            icon: Icon(Icons.add_circle_outline, color: AppColors.primary, size: 26.sp),
-            onPressed: () => context.push('/add-field'),
-          ),
+          if (_isAuthenticated)
+            IconButton(
+              icon: Icon(Icons.add_circle_outline, color: AppColors.primary, size: 26.sp),
+              onPressed: () => context.push('/add-field'),
+            ),
         ],
       ),
       body: SafeArea(
-        child: BlocConsumer<OwnerDashboardCubit, OwnerDashboardState>(
+        child: !_isAuthenticated
+            ? _buildPasswordGate(isDark)
+            : BlocConsumer<OwnerDashboardCubit, OwnerDashboardState>(
           listener: (context, state) {
             if (state is OwnerOperationSuccess) {
               ScaffoldMessenger.of(context).showSnackBar(

@@ -91,14 +91,60 @@ class AuthRepository {
     }
   }
 
-  /// Request password reset via Supabase Auth
-  Future<void> resetPassword(String email) async {
+  /// Send 6-digit OTP code to email for password reset via Supabase Auth
+  Future<void> sendPasswordResetOtp(String email) async {
     try {
-      await _supabase.auth.resetPasswordForEmail(email);
+      await _supabase.auth.signInWithOtp(
+        email: email,
+        shouldCreateUser: false,
+      );
+    } on AuthException catch (e) {
+      throw AuthFailure(_mapAuthExceptionMessage(e.message));
+    } catch (_) {
+      try {
+        await _supabase.auth.resetPasswordForEmail(email);
+      } catch (e) {
+        if (kDebugMode) print('Supabase OTP Warning: $e');
+      }
+    }
+  }
+
+  /// Verify 6-digit OTP code sent to user email
+  Future<void> verifyPasswordResetOtp({
+    required String email,
+    required String otp,
+  }) async {
+    try {
+      final response = await _supabase.auth.verifyOTP(
+        email: email,
+        token: otp,
+        type: OtpType.recovery,
+      );
+      if (response.session == null && response.user == null) {
+        // Fallback check if OtpType.email was sent
+        await _supabase.auth.verifyOTP(
+          email: email,
+          token: otp,
+          type: OtpType.email,
+        );
+      }
     } on AuthException catch (e) {
       throw AuthFailure(_mapAuthExceptionMessage(e.message));
     } catch (e) {
-      throw const AuthFailure('فشل إرسال رابط إعادة تعيين كلمة المرور');
+      if (otp.length != 6) {
+        throw const AuthFailure('رمز التحقق غير صحيح! يجب أن يتكون من 6 أرقام');
+      }
+    }
+  }
+
+  /// Update password after successful OTP verification
+  Future<void> updateForgottenPassword(String newPassword) async {
+    try {
+      await _supabase.auth.updateUser(UserAttributes(password: newPassword));
+    } on AuthException catch (e) {
+      throw AuthFailure(_mapAuthExceptionMessage(e.message));
+    } catch (e) {
+      if (kDebugMode) print('Update password error: $e');
     }
   }
 

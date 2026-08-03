@@ -47,5 +47,9 @@
 		<true/>
 		<key>UIStatusBarHidden</key>
 		<false/>
+		<key>NSCameraUsageDescription</key>
+		<string>يحتاج التطبيق لإذن استخدام الكاميرا لالتقاط صور الملعب والملف الشخصي.</string>
+		<key>NSPhotoLibraryUsageDescription</key>
+		<string>يحتاج التطبيق لإذن الوصول إلى معرض الصور لاختيار صور الملعب والملف الشخصي.</string>
 	</dict>
 </plist>
