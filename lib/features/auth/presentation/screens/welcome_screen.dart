@@ -1,3 +1,5 @@
+import 'package:field_time/app/router/app_router.dart';
+import 'package:field_time/core/utils/app_assets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
@@ -19,8 +21,8 @@ class WelcomeScreen extends StatelessWidget {
         children: [
           // Background Image
           Positioned.fill(
-            child: Image.network(
-              'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&q=80&w=1200',
+            child: Image.asset(
+              AppAssets.welcomeScreenImage,
               fit: BoxFit.cover,
             ),
           ),
@@ -87,18 +89,24 @@ class WelcomeScreen extends StatelessWidget {
                   // Sign In Button
                   PrimaryButton(
                     title: l10n.login,
-                    onPressed: () => context.push('/login'),
+                    onPressed: () => context.pushNamed(
+                      AppRouter.loginName,
+                    ),
                   ),
                   SizedBox(height: 16.h),
                   // Create Account Button
                   SecondaryOutlinedButton(
                     title: l10n.register,
-                    onPressed: () => context.push('/register'),
+                    onPressed: () => context.pushNamed(
+                      AppRouter.registerName,
+                    ),
                   ),
                   SizedBox(height: 24.h),
                   // Continue as Guest Link
                   GestureDetector(
-                    onTap: () => context.go('/main'),
+                    onTap: () => context.pushNamed(
+                      AppRouter.appSectionName,
+                    ),
                     child: Text(
                       'استمر كزائر',
                       style: AppTypography.body(color: Colors.white70).copyWith(

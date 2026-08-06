@@ -1,4 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:field_time/app/router/app_router.dart';
+import 'package:field_time/core/utils/get_it.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -9,27 +11,50 @@ import 'package:field_time/core/widgets/primary_button.dart';
 import 'package:field_time/features/booking/presentation/cubit/booking_cubit.dart';
 import 'package:field_time/features/field_details/presentation/cubit/field_details_cubit.dart';
 import 'package:field_time/features/field_details/presentation/cubit/field_details_state.dart';
-import 'package:field_time/features/home/data/repositories/field_repository.dart';
 
-class FieldDetailsScreen extends StatelessWidget {
+class FieldDetailsScreen extends StatefulWidget {
   final String fieldId;
 
-  const FieldDetailsScreen({
-    super.key,
-    required this.fieldId,
-  });
+  const FieldDetailsScreen({super.key, required this.fieldId});
+
+  @override
+  State<FieldDetailsScreen> createState() => _FieldDetailsScreenState();
+}
+
+class _FieldDetailsScreenState extends State<FieldDetailsScreen> {
+  late final FieldDetailsCubit _fieldDetailsCubit;
+  late final BookingCubit _bookingCubit;
+
+  @override
+  void initState() {
+    super.initState();
+    _fieldDetailsCubit = getIt<FieldDetailsCubit>();
+    _bookingCubit = getIt<BookingCubit>();
+  }
+
+  @override
+  void dispose() {
+    _fieldDetailsCubit.close();
+    _bookingCubit.close();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => FieldDetailsCubit(FieldRepository())..loadFieldDetails(fieldId),
-      child: const _FieldDetailsView(),
+    return _FieldDetailsView(
+      fieldDetailsCubit: _fieldDetailsCubit,
+      bookingCubit: _bookingCubit,
     );
   }
 }
 
 class _FieldDetailsView extends StatefulWidget {
-  const _FieldDetailsView();
+  final FieldDetailsCubit fieldDetailsCubit;
+  final BookingCubit bookingCubit;
+  const _FieldDetailsView({
+    required this.fieldDetailsCubit,
+    required this.bookingCubit,
+  });
 
   @override
   State<_FieldDetailsView> createState() => _FieldDetailsViewState();
@@ -61,13 +86,16 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       body: BlocBuilder<FieldDetailsCubit, FieldDetailsState>(
         builder: (context, state) {
           if (state is FieldDetailsLoading) {
-            return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+            return const Center(
+              child: CircularProgressIndicator(color: AppColors.primary),
+            );
           } else if (state is FieldDetailsLoaded) {
             final field = state.field;
             return Stack(
@@ -82,7 +110,7 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
                         children: [
                           CachedNetworkImage(
                             imageUrl: field.mainImage,
-                            width: double.infinity,
+                            width: size.width,
                             height: 280.h,
                             fit: BoxFit.cover,
                           ),
@@ -95,18 +123,27 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 CircleAvatar(
-                                  backgroundColor: Colors.black.withValues(alpha: 0.5),
+                                  backgroundColor: AppColors.surfaceDark
+                                      .withValues(alpha: 0.5),
                                   child: IconButton(
-                                    icon: const Icon(Icons.arrow_back, color: Colors.white),
+                                    icon: Icon(
+                                      Icons.arrow_back,
+                                      color: AppColors.backgroundLight,
+                                    ),
                                     onPressed: () => context.pop(),
                                   ),
                                 ),
                                 CircleAvatar(
-                                  backgroundColor: Colors.black.withValues(alpha: 0.5),
+                                  backgroundColor: AppColors.surfaceDark
+                                      .withValues(alpha: 0.5),
                                   child: IconButton(
                                     icon: Icon(
-                                      field.isFavorite ? Icons.favorite : Icons.favorite_border,
-                                      color: field.isFavorite ? Colors.red : Colors.white,
+                                      field.isFavorite
+                                          ? Icons.favorite
+                                          : Icons.favorite_border,
+                                      color: field.isFavorite
+                                          ? AppColors.error
+                                          : AppColors.backgroundLight,
                                     ),
                                     onPressed: () {},
                                   ),
@@ -125,7 +162,9 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
                                   ClipRRect(
                                     borderRadius: BorderRadius.circular(10.r),
                                     child: CachedNetworkImage(
-                                      imageUrl: field.images.length > i ? field.images[i] : field.mainImage,
+                                      imageUrl: field.images.length > i
+                                          ? field.images[i]
+                                          : field.mainImage,
                                       width: 60.w,
                                       height: 60.h,
                                       fit: BoxFit.cover,
@@ -138,14 +177,16 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
                                   height: 60.h,
                                   decoration: BoxDecoration(
                                     borderRadius: BorderRadius.circular(10.r),
-                                    color: Colors.black.withValues(alpha: 0.6),
+                                    color: AppColors.surfaceDark.withValues(
+                                      alpha: 0.6,
+                                    ),
                                   ),
                                   child: Center(
                                     child: Text(
                                       '+12',
-                                      style: AppTypography.caption(color: Colors.white).copyWith(
-                                        fontWeight: FontWeight.bold,
-                                      ),
+                                      style: AppTypography.caption(
+                                        color: Colors.white,
+                                      ).copyWith(fontWeight: FontWeight.bold),
                                     ),
                                   ),
                                 ),
@@ -167,7 +208,9 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
                                 Text(
                                   field.name,
                                   style: AppTypography.heading2(
-                                    color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                                    color: isDark
+                                        ? AppColors.textPrimaryDark
+                                        : AppColors.textPrimaryLight,
                                   ),
                                 ),
                                 Row(
@@ -175,17 +218,23 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
                                     Text(
                                       '(${field.reviewsCount} تقييم)',
                                       style: AppTypography.caption(
-                                        color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                                        color: isDark
+                                            ? AppColors.textSecondaryDark
+                                            : AppColors.textSecondaryLight,
                                       ),
                                     ),
                                     SizedBox(width: 4.w),
                                     Text(
                                       field.rating.toStringAsFixed(1),
-                                      style: AppTypography.title(color: AppColors.primary).copyWith(
-                                        fontWeight: FontWeight.bold,
-                                      ),
+                                      style: AppTypography.title(
+                                        color: AppColors.primary,
+                                      ).copyWith(fontWeight: FontWeight.bold),
                                     ),
-                                    Icon(Icons.star, color: AppColors.accent, size: 20.sp),
+                                    Icon(
+                                      Icons.star,
+                                      color: AppColors.accent,
+                                      size: 20.sp,
+                                    ),
                                   ],
                                 ),
                               ],
@@ -194,19 +243,27 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
                             // Address & Distance
                             Row(
                               children: [
-                                Icon(Icons.location_on_outlined, size: 16.sp, color: AppColors.iconGrey),
+                                Icon(
+                                  Icons.location_on_outlined,
+                                  size: 16.sp,
+                                  color: AppColors.iconGrey,
+                                ),
                                 SizedBox(width: 4.w),
                                 Text(
                                   field.address,
                                   style: AppTypography.body(
-                                    color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                                    color: isDark
+                                        ? AppColors.textSecondaryDark
+                                        : AppColors.textSecondaryLight,
                                   ),
                                 ),
                                 const Spacer(),
                                 Text(
                                   field.distance,
                                   style: AppTypography.caption(
-                                    color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                                    color: isDark
+                                        ? AppColors.textSecondaryDark
+                                        : AppColors.textSecondaryLight,
                                   ),
                                 ),
                               ],
@@ -215,9 +272,17 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
                             // Facilities Cards Grid
                             Row(
                               children: [
-                                _facilityCard(Icons.lightbulb_outline, 'إضاءة ليلية', isDark),
+                                _facilityCard(
+                                  Icons.lightbulb_outline,
+                                  'إضاءة ليلية',
+                                  isDark,
+                                ),
                                 SizedBox(width: 10.w),
-                                _facilityCard(Icons.directions_car_outlined, 'مواقف سيارات', isDark),
+                                _facilityCard(
+                                  Icons.directions_car_outlined,
+                                  'مواقف سيارات',
+                                  isDark,
+                                ),
                                 SizedBox(width: 10.w),
                                 _facilityCard(Icons.wc, 'دورات مياه', isDark),
                                 SizedBox(width: 10.w),
@@ -229,7 +294,9 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
                             Text(
                               'اختر التاريخ',
                               style: AppTypography.title(
-                                color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                                color: isDark
+                                    ? AppColors.textPrimaryDark
+                                    : AppColors.textPrimaryLight,
                               ).copyWith(fontWeight: FontWeight.bold),
                             ),
                             SizedBox(height: 14.h),
@@ -238,29 +305,42 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
                               child: ListView.separated(
                                 scrollDirection: Axis.horizontal,
                                 itemCount: _dates.length,
-                                separatorBuilder: (context, index) => SizedBox(width: 10.w),
+                                separatorBuilder: (context, index) =>
+                                    SizedBox(width: 10.w),
                                 itemBuilder: (context, index) {
                                   final d = _dates[index];
-                                  final isSelected = d['full'] == state.selectedDate;
+                                  final isSelected =
+                                      d['full'] == state.selectedDate;
                                   return GestureDetector(
-                                    onTap: () => context.read<FieldDetailsCubit>().selectDate(d['full']!),
+                                    onTap: () => context
+                                        .read<FieldDetailsCubit>()
+                                        .selectDate(d['full']!),
                                     child: Container(
                                       width: 65.w,
                                       decoration: BoxDecoration(
                                         color: isSelected
                                             ? AppColors.primary
-                                            : (isDark ? AppColors.cardDark : AppColors.greyLight),
-                                        borderRadius: BorderRadius.circular(16.r),
+                                            : (isDark
+                                                  ? AppColors.cardDark
+                                                  : AppColors.greyLight),
+                                        borderRadius: BorderRadius.circular(
+                                          16.r,
+                                        ),
                                       ),
                                       child: Column(
-                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
                                         children: [
                                           Text(
                                             d['day']!,
                                             style: AppTypography.small(
                                               color: isSelected
-                                                  ? Colors.white
-                                                  : (isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight),
+                                                  ? AppColors.backgroundLight
+                                                  : (isDark
+                                                        ? AppColors
+                                                              .textSecondaryDark
+                                                        : AppColors
+                                                              .textSecondaryLight),
                                             ),
                                           ),
                                           SizedBox(height: 4.h),
@@ -268,8 +348,12 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
                                             d['num']!,
                                             style: AppTypography.body(
                                               color: isSelected
-                                                  ? Colors.white
-                                                  : (isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight),
+                                                  ? AppColors.backgroundLight
+                                                  : (isDark
+                                                        ? AppColors
+                                                              .textPrimaryDark
+                                                        : AppColors
+                                                              .textPrimaryLight),
                                             ).copyWith(fontWeight: FontWeight.bold),
                                           ),
                                         ],
@@ -287,7 +371,9 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
                                 Text(
                                   'المواعيد المتاحة',
                                   style: AppTypography.title(
-                                    color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                                    color: isDark
+                                        ? AppColors.textPrimaryDark
+                                        : AppColors.textPrimaryLight,
                                   ).copyWith(fontWeight: FontWeight.bold),
                                 ),
                                 Row(
@@ -306,37 +392,46 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
                             GridView.builder(
                               shrinkWrap: true,
                               physics: const NeverScrollableScrollPhysics(),
-                              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 4,
-                                mainAxisSpacing: 10.h,
-                                crossAxisSpacing: 10.w,
-                                childAspectRatio: 2.2,
-                              ),
+                              gridDelegate:
+                                  SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: 4,
+                                    mainAxisSpacing: 10.h,
+                                    crossAxisSpacing: 10.w,
+                                    childAspectRatio: 2.2,
+                                  ),
                               itemCount: _timeSlots.length,
                               itemBuilder: (context, index) {
                                 final slot = _timeSlots[index];
                                 final timeStr = slot['time'] as String;
                                 final status = slot['status'] as String;
-                                final isSelected = timeStr == state.selectedTimeSlot;
+                                final isSelected =
+                                    timeStr == state.selectedTimeSlot;
 
                                 Color bgColor;
                                 Color textColor;
 
                                 if (status == 'booked') {
-                                  bgColor = AppColors.error.withValues(alpha: 0.85);
-                                  textColor = Colors.white;
+                                  bgColor = AppColors.error.withValues(
+                                    alpha: 0.85,
+                                  );
+                                  textColor = AppColors.backgroundLight;
                                 } else if (isSelected) {
                                   bgColor = AppColors.primary;
-                                  textColor = Colors.white;
+                                  textColor = AppColors.backgroundLight;
                                 } else {
-                                  bgColor = isDark ? AppColors.cardDark : AppColors.greyLight;
-                                  textColor = isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
+                                  bgColor = isDark
+                                      ? AppColors.cardDark
+                                      : AppColors.greyLight;
+                                  textColor = isDark
+                                      ? AppColors.textPrimaryDark
+                                      : AppColors.textPrimaryLight;
                                 }
 
                                 return GestureDetector(
                                   onTap: status == 'booked'
                                       ? null
-                                      : () => context.read<FieldDetailsCubit>().selectTimeSlot(timeStr),
+                                      : () => widget.fieldDetailsCubit
+                                            .selectTimeSlot(timeStr),
                                   child: Container(
                                     decoration: BoxDecoration(
                                       color: bgColor,
@@ -345,9 +440,9 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
                                     alignment: Alignment.center,
                                     child: Text(
                                       timeStr,
-                                      style: AppTypography.caption(color: textColor).copyWith(
-                                        fontWeight: FontWeight.bold,
-                                      ),
+                                      style: AppTypography.caption(
+                                        color: textColor,
+                                      ).copyWith(fontWeight: FontWeight.bold),
                                     ),
                                   ),
                                 );
@@ -365,7 +460,10 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
                   left: 0,
                   right: 0,
                   child: Container(
-                    padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 16.h),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 20.w,
+                      vertical: 16.h,
+                    ),
                     decoration: BoxDecoration(
                       color: isDark ? AppColors.cardDark : AppColors.cardLight,
                       boxShadow: [
@@ -388,11 +486,15 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
                                 children: [
                                   TextSpan(
                                     text: '${field.pricePerHour.toInt()} ',
-                                    style: AppTypography.heading2(color: AppColors.primary),
+                                    style: AppTypography.heading2(
+                                      color: AppColors.primary,
+                                    ),
                                   ),
                                   TextSpan(
                                     text: 'جنيه',
-                                    style: AppTypography.body(color: AppColors.primary),
+                                    style: AppTypography.body(
+                                      color: AppColors.primary,
+                                    ),
                                   ),
                                 ],
                               ),
@@ -400,7 +502,9 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
                             Text(
                               'السعر / ساعة',
                               style: AppTypography.small(
-                                color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                                color: isDark
+                                    ? AppColors.textSecondaryDark
+                                    : AppColors.textSecondaryLight,
                               ),
                             ),
                           ],
@@ -409,17 +513,18 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
                           title: 'احجز الآن',
                           width: 180.w,
                           onPressed: () async {
-                            final booking = await context.read<BookingCubit>().createBooking(
+                            final booking = await widget.bookingCubit.createBooking(
                                   fieldId: field.id,
                                   fieldName: field.name,
                                   fieldAddress: field.address,
                                   fieldImage: field.mainImage,
                                   date: state.selectedDate,
-                                  timeSlot: '${state.selectedTimeSlot ?? "19:00"} - 20:00',
+                                  timeSlot:
+                                      '${state.selectedTimeSlot ?? "19:00"} - 20:00',
                                   price: field.pricePerHour,
                                 );
                             if (booking != null && context.mounted) {
-                              context.push('/booking-success');
+                              context.pushNamed(AppRouter.bookingSuccessName);
                             }
                           },
                         ),
@@ -430,7 +535,12 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
               ],
             );
           } else if (state is FieldDetailsError) {
-            return Center(child: Text(state.message, style: AppTypography.body(color: AppColors.error)));
+            return Center(
+              child: Text(
+                state.message,
+                style: AppTypography.body(color: AppColors.error),
+              ),
+            );
           }
           return const SizedBox.shrink();
         },
@@ -448,12 +558,20 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
         ),
         child: Column(
           children: [
-            Icon(icon, size: 22.sp, color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight),
+            Icon(
+              icon,
+              size: 22.sp,
+              color: isDark
+                  ? AppColors.textPrimaryDark
+                  : AppColors.textPrimaryLight,
+            ),
             SizedBox(height: 6.h),
             Text(
               label,
               style: AppTypography.small(
-                color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                color: isDark
+                    ? AppColors.textSecondaryDark
+                    : AppColors.textSecondaryLight,
               ),
               textAlign: TextAlign.center,
               maxLines: 1,

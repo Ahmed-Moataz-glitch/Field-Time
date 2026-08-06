@@ -1,3 +1,5 @@
+import 'package:field_time/app/router/app_router.dart';
+import 'package:field_time/core/utils/get_it.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -19,7 +21,8 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final _searchController = TextEditingController();
+  late final HomeCubit _homeCubit;
+  late final TextEditingController _searchController;
 
   final List<Map<String, dynamic>> _categories = const [
     {'title': 'كل الملاعب', 'icon': Icons.sports_soccer},
@@ -32,17 +35,23 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    context.read<HomeCubit>().loadHomeData();
+    _homeCubit = getIt<HomeCubit>();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _homeCubit.loadHomeData();
+    });
+    _searchController = TextEditingController();
   }
 
   @override
   void dispose() {
+    _homeCubit.close();
     _searchController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
@@ -64,13 +73,17 @@ class _HomeScreenState extends State<HomeScreen> {
                           Text(
                             'مرحباً ',
                             style: AppTypography.caption(
-                              color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                              color: isDark
+                                  ? AppColors.textSecondaryDark
+                                  : AppColors.textSecondaryLight,
                             ),
                           ),
                           Text(
                             'أحمد 👋',
                             style: AppTypography.title(
-                              color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                              color: isDark
+                                  ? AppColors.textPrimaryDark
+                                  : AppColors.textPrimaryLight,
                             ).copyWith(fontWeight: FontWeight.bold),
                           ),
                         ],
@@ -81,7 +94,9 @@ class _HomeScreenState extends State<HomeScreen> {
                           Text(
                             'القاهرة، مصر',
                             style: AppTypography.caption(
-                              color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                              color: isDark
+                                  ? AppColors.textPrimaryDark
+                                  : AppColors.textPrimaryLight,
                             ).copyWith(fontWeight: FontWeight.bold),
                           ),
                           Icon(
@@ -103,7 +118,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     child: Icon(
                       Icons.notifications_none_rounded,
-                      color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                      color: isDark
+                          ? AppColors.textPrimaryDark
+                          : AppColors.textPrimaryLight,
                       size: 22.sp,
                     ),
                   ),
@@ -116,20 +133,23 @@ class _HomeScreenState extends State<HomeScreen> {
                 hintText: 'ابحث عن ملعب أو منطقة',
                 prefixIcon: const Icon(Icons.search, color: AppColors.iconGrey),
                 onChanged: (val) {
-                  context.read<HomeCubit>().searchFields(val);
+                  _homeCubit.searchFields(val);
                 },
               ),
               SizedBox(height: 20.h),
               // Categories Horizontal List
               BlocBuilder<HomeCubit, HomeState>(
                 builder: (context, state) {
-                  final selectedCategory = (state is HomeLoaded) ? state.selectedCategory : 'كل الملاعب';
+                  final selectedCategory = (state is HomeLoaded)
+                      ? state.selectedCategory
+                      : 'كل الملاعب';
                   return SizedBox(
                     height: 44.h,
                     child: ListView.separated(
                       scrollDirection: Axis.horizontal,
                       itemCount: _categories.length,
-                      separatorBuilder: (context, index) => SizedBox(width: 10.w),
+                      separatorBuilder: (context, index) =>
+                          SizedBox(width: 10.w),
                       itemBuilder: (context, index) {
                         final cat = _categories[index];
                         final isSelected = cat['title'] == selectedCategory;
@@ -138,7 +158,9 @@ class _HomeScreenState extends State<HomeScreen> {
                           icon: cat['icon'] as IconData,
                           isSelected: isSelected,
                           onTap: () {
-                            context.read<HomeCubit>().selectCategory(cat['title'] as String);
+                            _homeCubit.selectCategory(
+                              cat['title'] as String,
+                            );
                           },
                         );
                       },
@@ -159,7 +181,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   Text(
                     'الملاعب القريبة منك',
                     style: AppTypography.title(
-                      color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                      color: isDark
+                          ? AppColors.textPrimaryDark
+                          : AppColors.textPrimaryLight,
                     ).copyWith(fontWeight: FontWeight.bold),
                   ),
                 ],
@@ -174,7 +198,11 @@ class _HomeScreenState extends State<HomeScreen> {
                         3,
                         (index) => Padding(
                           padding: EdgeInsets.only(bottom: 16.h),
-                          child: LoadingSkeleton(width: double.infinity, height: 120.h, borderRadius: 20),
+                          child: LoadingSkeleton(
+                            width: size.width,
+                            height: 120.h,
+                            borderRadius: 20.r,
+                          ),
                         ),
                       ),
                     );
@@ -186,7 +214,9 @@ class _HomeScreenState extends State<HomeScreen> {
                           child: Text(
                             'لا توجد ملاعب مطابقة للبحث',
                             style: AppTypography.body(
-                              color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                              color: isDark
+                                  ? AppColors.textSecondaryDark
+                                  : AppColors.textSecondaryLight,
                             ),
                           ),
                         ),
@@ -200,7 +230,10 @@ class _HomeScreenState extends State<HomeScreen> {
                         final field = state.fields[index];
                         return FieldCard(
                           field: field,
-                          onTap: () => context.push('/field-details/${field.id}'),
+                          onTap: () => context.pushNamed(
+                            AppRouter.fieldDetailsName,
+                            queryParameters: {'fieldId': field.id},
+                          ),
                         );
                       },
                     );

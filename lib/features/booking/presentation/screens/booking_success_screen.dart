@@ -1,3 +1,4 @@
+import 'package:field_time/app/router/app_router.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -21,7 +22,7 @@ class BookingSuccessScreen extends StatelessWidget {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
-          onPressed: () => context.go('/main'),
+          onPressed: () => context.go(AppRouter.appSectionPath),
         ),
         title: Text(
           'تأكيد الحجز',
@@ -56,18 +57,18 @@ class BookingSuccessScreen extends StatelessWidget {
                     child: Icon(
                       Icons.check,
                       size: 60.sp,
-                      color: Colors.white,
+                      color: AppColors.backgroundLight,
                     ),
                   ),
                   SizedBox(height: 24.h),
                   Text(
                     'تم الحجز بنجاح 🎉',
-                    style: AppTypography.heading2(color: Colors.white),
+                    style: AppTypography.heading2(color: AppColors.backgroundLight),
                   ),
                   SizedBox(height: 8.h),
                   Text(
                     'تم حجز ملعب $fieldName بنجاح',
-                    style: AppTypography.body(color: Colors.white70),
+                    style: AppTypography.body(color: AppColors.backgroundLight.withAlpha(180)),
                   ),
                   SizedBox(height: 32.h),
                   // Breakdown Card
@@ -80,13 +81,13 @@ class BookingSuccessScreen extends StatelessWidget {
                     child: Column(
                       children: [
                         _buildDetailRow('الملعب', fieldName),
-                        const Divider(color: Colors.white10),
+                        Divider(color: AppColors.backgroundLight.withAlpha(30)),
                         _buildDetailRow('التاريخ', date),
-                        const Divider(color: Colors.white10),
+                        Divider(color: AppColors.backgroundLight.withAlpha(30)),
                         _buildDetailRow('الوقت', time),
-                        const Divider(color: Colors.white10),
+                        Divider(color: AppColors.backgroundLight.withAlpha(30)),
                         _buildDetailRow('السعر', price),
-                        const Divider(color: Colors.white10),
+                        Divider(color: AppColors.backgroundLight.withAlpha(30)),
                         _buildDetailRow('رقم الحجز', code),
                       ],
                     ),
@@ -95,13 +96,17 @@ class BookingSuccessScreen extends StatelessWidget {
                   // Actions
                   PrimaryButton(
                     title: 'عرض الحجز',
-                    onPressed: () => context.go('/main'),
+                    onPressed: () => context.pushReplacementNamed(
+                      AppRouter.appSectionName,
+                    ),
                   ),
                   SizedBox(height: 14.h),
                   SecondaryOutlinedButton(
                     title: 'العودة للرئيسية',
                     borderColor: Colors.white54,
-                    onPressed: () => context.go('/main'),
+                    onPressed: () => context.pushReplacementNamed(
+                      AppRouter.appSectionName,
+                    ),
                   ),
                   SizedBox(height: 10.h),
                 ],
@@ -121,11 +126,11 @@ class BookingSuccessScreen extends StatelessWidget {
         children: [
           Text(
             label,
-            style: AppTypography.body(color: Colors.white70),
+            style: AppTypography.body(color: AppColors.backgroundLight.withAlpha(180)),
           ),
           Text(
             value,
-            style: AppTypography.body(color: Colors.white).copyWith(
+            style: AppTypography.body(color: AppColors.backgroundLight).copyWith(
               fontWeight: FontWeight.bold,
             ),
           ),

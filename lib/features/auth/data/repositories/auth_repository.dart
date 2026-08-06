@@ -1,16 +1,18 @@
+import 'package:field_time/core/utils/secure_storage.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:field_time/core/errors/failures.dart';
 import 'package:field_time/features/auth/data/models/user_model.dart';
 
 class AuthRepository {
-  final SupabaseClient _supabase;
+  final SupabaseClient _supabase = Supabase.instance.client;
+  final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
 
-  AuthRepository([SupabaseClient? supabase])
-      : _supabase = supabase ?? Supabase.instance.client;
 
   /// Sign in with email and password using Supabase Auth and fetch profile
-  Future<UserModel> login({
+  Future<UserModel> loginWithEmailAndPassword({
     required String email,
     required String password,
   }) async {
@@ -24,7 +26,7 @@ class AuthRepository {
       if (user == null) {
         throw const AuthFailure('لم يتم العثور على بيانات المستخدم');
       }
-
+      await SecureStorage.saveToken(user.aud); // Save the token for session management
       final profile = await _fetchProfile(user.id);
       return UserModel.fromSupabase(user, profile);
     } on AuthException catch (e) {
@@ -34,6 +36,24 @@ class AuthRepository {
     } catch (e) {
       if (kDebugMode) print('Login Error: $e');
       throw const AuthFailure('حدث خطأ أثناء تسجيل الدخول. حاول مرة أخرى.');
+    }
+  }
+
+  Future<bool> loginWithGoogle() async {
+    try {
+      final gUser = await GoogleSignIn().signIn();
+      final gAuth = await gUser?.authentication;
+      final credential = GoogleAuthProvider.credential(
+        accessToken: gAuth?.accessToken,
+        idToken: gAuth?.idToken,
+      );
+      final userCredential = await _firebaseAuth.signInWithCredential(
+        credential,
+      );
+      await SecureStorage.saveToken(await userCredential.user?.getIdToken() ?? ''); // Save the token for session management
+      return userCredential.user != null;
+    } catch (_) {
+      return false;
     }
   }
 
@@ -91,6 +111,35 @@ class AuthRepository {
     }
   }
 
+  Future<void> sendOtpForNewUser(String email) async {
+    try {
+      await _supabase.auth.signInWithOtp(email: email, shouldCreateUser: true);
+    } catch (e) {
+      throw 'Error from send OTP for new user $e';
+    }
+  }
+
+  Future<void> sendOtpForExistingUser(String email) async {
+    try {
+      await _supabase.auth.signInWithOtp(email: email, shouldCreateUser: false);
+    } catch (e) {
+      throw 'Error from send OTP for existing user $e';
+    }
+  }
+
+  Future<bool> validateOtp({required String email, required String otp}) async {
+    try {
+      final result = await _supabase.auth.verifyOTP(
+        type: OtpType.email,
+        email: email,
+        token: otp,
+      );
+      return result.session != null;
+    } catch (e) {
+      throw 'Error from verify OTP $e';
+    }
+  }
+
   /// Request password reset via Supabase Auth
   Future<void> resetPassword(String email) async {
     try {
@@ -145,10 +194,12 @@ class AuthRepository {
   /// Translate Supabase English error messages to user-friendly Arabic messages
   String _mapAuthExceptionMessage(String message) {
     final lower = message.toLowerCase();
-    if (lower.contains('invalid login credentials') || lower.contains('invalid_credentials')) {
+    if (lower.contains('invalid login credentials') ||
+        lower.contains('invalid_credentials')) {
       return 'البريد الإلكتروني أو كلمة المرور غير صحيحة';
     }
-    if (lower.contains('user already registered') || lower.contains('already_exists')) {
+    if (lower.contains('user already registered') ||
+        lower.contains('already_exists')) {
       return 'هذا البريد الإلكتروني مسجل بالفعل';
     }
     if (lower.contains('password should be at least')) {

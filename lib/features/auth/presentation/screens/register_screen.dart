@@ -1,3 +1,6 @@
+import 'package:field_time/app/router/app_router.dart';
+import 'package:field_time/core/utils/app_dialogs.dart';
+import 'package:field_time/core/utils/get_it.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -18,15 +21,29 @@ class RegisterScreen extends StatefulWidget {
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
-  final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  final _emailController = TextEditingController();
-  final _phoneController = TextEditingController();
-  final _passwordController = TextEditingController();
+  late final AuthCubit _authCubit;
+  late final GlobalKey<FormState> _formKey;
+  late final TextEditingController _nameController;
+  late final TextEditingController _emailController;
+  late final TextEditingController _phoneController;
+  late final TextEditingController _passwordController;
   String _selectedRole = 'user'; // 'user' (Player) or 'owner' (Field Owner)
 
   @override
+  void initState() {
+    super.initState();
+    _authCubit = getIt<AuthCubit>();
+    _formKey = GlobalKey<FormState>();
+    _nameController = TextEditingController();
+    _emailController = TextEditingController();
+    _phoneController = TextEditingController();
+    _passwordController = TextEditingController();
+  }
+
+  @override
   void dispose() {
+    _authCubit.close();
+    _formKey.currentState?.dispose();
     _nameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
@@ -34,15 +51,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
     super.dispose();
   }
 
-  void _onRegisterPressed() {
+  void _onRegisterPressed() async {
     if (_formKey.currentState?.validate() ?? false) {
-      context.read<AuthCubit>().register(
-            fullName: _nameController.text.trim(),
-            email: _emailController.text.trim(),
-            phone: _phoneController.text.trim(),
-            password: _passwordController.text.trim(),
-            role: _selectedRole,
-          );
+      final email = _emailController.text.trim();
+      await _authCubit.register(
+        fullName: _nameController.text.trim(),
+        email: email,
+        phone: _phoneController.text.trim(),
+        password: _passwordController.text.trim(),
+        role: _selectedRole,
+      );
+      if (_authCubit.state is Authenticated) {
+        await _authCubit.sendOtpForNewUser(email);
+      }
     }
   }
 
@@ -59,15 +80,30 @@ class _RegisterScreenState extends State<RegisterScreen> {
         ),
       ),
       body: BlocListener<AuthCubit, AuthState>(
+        bloc: _authCubit,
+        listenWhen: (previous, current) =>
+            current is AuthLoading ||
+            current is Authenticated ||
+            current is AuthError,
         listener: (context, state) {
+          if (state is AuthLoading) {
+            AppDialogs.showLoadingDialog(context, title: 'جار إنشاء الحساب...');
+          }
           if (state is Authenticated) {
-            context.go('/main');
+            context.pop(); // Close loading dialog
+            context.pushNamed(
+              AppRouter.verifyEmailName,
+              extra: _authCubit,
+              queryParameters: {
+                'email': _emailController.text.trim(),
+              },
+            );
           } else if (state is AuthError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.message),
-                backgroundColor: AppColors.error,
-              ),
+            context.pop(); // Close the loading dialog
+            AppDialogs.showSnackBar(
+              context: context,
+              message: state.message,
+              isError: true,
             );
           }
         },
@@ -82,14 +118,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   Text(
                     '${l10n.register} ⚽',
                     style: AppTypography.heading1(
-                      color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                      color: isDark
+                          ? AppColors.textPrimaryDark
+                          : AppColors.textPrimaryLight,
                     ),
                   ),
                   SizedBox(height: 8.h),
                   Text(
                     'أنشئ حسابك للبدء في حجز ملاعبك المفضلة',
                     style: AppTypography.body(
-                      color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                      color: isDark
+                          ? AppColors.textSecondaryDark
+                          : AppColors.textSecondaryLight,
                     ),
                   ),
                   SizedBox(height: 24.h),
@@ -98,7 +138,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   Text(
                     'نوع الحساب',
                     style: AppTypography.caption(
-                      color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                      color: isDark
+                          ? AppColors.textPrimaryDark
+                          : AppColors.textPrimaryLight,
                     ),
                   ),
                   SizedBox(height: 8.h),
@@ -106,6 +148,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     children: [
                       Expanded(
                         child: _RoleCard(
+                          l10n: l10n,
                           title: 'لاعب / حاجز',
                           icon: Icons.sports_soccer,
                           isSelected: _selectedRole == 'user',
@@ -115,6 +158,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       SizedBox(width: 12.w),
                       Expanded(
                         child: _RoleCard(
+                          l10n: l10n,
                           title: 'صاحب ملعب',
                           icon: Icons.stadium_outlined,
                           isSelected: _selectedRole == 'owner',
@@ -129,8 +173,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   CustomTextField(
                     controller: _nameController,
                     hintText: l10n.fullName,
-                    prefixIcon: const Icon(Icons.person_outline, color: AppColors.iconGrey),
-                    validator: (val) => (val == null || val.trim().isEmpty) ? 'يرجى إدخال الاسم' : null,
+                    prefixIcon: const Icon(
+                      Icons.person_outline,
+                      color: AppColors.iconGrey,
+                    ),
+                    validator: (val) => (val == null || val.trim().isEmpty)
+                        ? 'يرجى إدخال الاسم'
+                        : null,
                   ),
                   SizedBox(height: 16.h),
                   // Email Field
@@ -138,9 +187,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     controller: _emailController,
                     hintText: l10n.email,
                     keyboardType: TextInputType.emailAddress,
-                    prefixIcon: const Icon(Icons.email_outlined, color: AppColors.iconGrey),
+                    prefixIcon: const Icon(
+                      Icons.email_outlined,
+                      color: AppColors.iconGrey,
+                    ),
                     validator: (val) {
-                      if (val == null || val.trim().isEmpty) return 'يرجى إدخال البريد';
+                      if (val == null || val.trim().isEmpty) {
+                        return 'يرجى إدخال البريد';
+                      }
                       if (!val.contains('@')) return 'بريد غير صالح';
                       return null;
                     },
@@ -151,8 +205,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     controller: _phoneController,
                     hintText: l10n.phone,
                     keyboardType: TextInputType.phone,
-                    prefixIcon: const Icon(Icons.phone_outlined, color: AppColors.iconGrey),
-                    validator: (val) => (val == null || val.trim().isEmpty) ? 'يرجى إدخال رقم الهاتف' : null,
+                    prefixIcon: const Icon(
+                      Icons.phone_outlined,
+                      color: AppColors.iconGrey,
+                    ),
+                    validator: (val) => (val == null || val.trim().isEmpty)
+                        ? 'يرجى إدخال رقم الهاتف'
+                        : null,
                   ),
                   SizedBox(height: 16.h),
                   // Password Field
@@ -160,10 +219,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     controller: _passwordController,
                     hintText: l10n.password,
                     isPassword: true,
-                    prefixIcon: const Icon(Icons.lock_outline, color: AppColors.iconGrey),
+                    prefixIcon: const Icon(
+                      Icons.lock_outline,
+                      color: AppColors.iconGrey,
+                    ),
                     validator: (val) {
-                      if (val == null || val.trim().isEmpty) return 'يرجى إدخال كلمة المرور';
-                      if (val.trim().length < 6) return 'كلمة المرور لا تقل عن 6 أحرف';
+                      if (val == null || val.trim().isEmpty) {
+                        return 'يرجى إدخال كلمة المرور';
+                      }
+                      if (val.trim().length < 6) {
+                        return 'كلمة المرور لا تقل عن 6 أحرف';
+                      }
                       return null;
                     },
                   ),
@@ -184,16 +250,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       Text(
                         '${l10n.alreadyHaveAccount} ',
                         style: AppTypography.body(
-                          color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                          color: isDark
+                              ? AppColors.textSecondaryDark
+                              : AppColors.textSecondaryLight,
                         ),
                       ),
                       GestureDetector(
                         onTap: () => context.pop(),
                         child: Text(
                           l10n.login,
-                          style: AppTypography.body(color: AppColors.primary).copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: AppTypography.body(
+                            color: AppColors.primary,
+                          ).copyWith(fontWeight: FontWeight.bold),
                         ),
                       ),
                     ],
@@ -209,12 +277,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
 }
 
 class _RoleCard extends StatelessWidget {
+  final AppLocalizations l10n;
   final String title;
   final IconData icon;
   final bool isSelected;
   final VoidCallback onTap;
 
   const _RoleCard({
+    required this.l10n,
     required this.title,
     required this.icon,
     required this.isSelected,
@@ -237,7 +307,7 @@ class _RoleCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isSelected ? AppColors.primary : AppColors.greyBorder,
-            width: isSelected ? 2 : 1,
+            width: 1,
           ),
         ),
         child: Row(
@@ -251,13 +321,18 @@ class _RoleCard extends StatelessWidget {
             SizedBox(width: 8.w),
             Text(
               title,
-              style: AppTypography.caption(
-                color: isSelected
-                    ? AppColors.primary
-                    : (isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight),
-              ).copyWith(
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-              ),
+              style:
+                  AppTypography.caption(
+                    color: isSelected
+                        ? AppColors.primary
+                        : (isDark
+                              ? AppColors.textPrimaryDark
+                              : AppColors.textPrimaryLight),
+                  ).copyWith(
+                    fontWeight: isSelected
+                        ? FontWeight.bold
+                        : FontWeight.normal,
+                  ),
             ),
           ],
         ),

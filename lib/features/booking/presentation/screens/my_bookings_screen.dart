@@ -1,4 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:field_time/core/utils/get_it.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -16,12 +17,22 @@ class MyBookingsScreen extends StatefulWidget {
 }
 
 class _MyBookingsScreenState extends State<MyBookingsScreen> {
+  late final BookingCubit bookingCubit;
   final List<String> _tabs = const ['القادمة', 'السابقة', 'ملغاة'];
 
   @override
   void initState() {
     super.initState();
-    context.read<BookingCubit>().loadBookings();
+    bookingCubit = getIt<BookingCubit>();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await bookingCubit.loadBookings();
+    });
+  }
+
+  @override
+  void dispose() {
+    bookingCubit.close();
+    super.dispose();
   }
 
   @override
@@ -53,7 +64,7 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
                       final isSelected = tab == activeTab;
                       return Expanded(
                         child: GestureDetector(
-                          onTap: () => context.read<BookingCubit>().changeTab(tab),
+                          onTap: () => bookingCubit.changeTab(tab),
                           child: Container(
                             margin: EdgeInsets.symmetric(horizontal: 4.w),
                             padding: EdgeInsets.symmetric(vertical: 10.h),
@@ -68,7 +79,7 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
                               tab,
                               style: AppTypography.caption(
                                 color: isSelected
-                                    ? Colors.white
+                                    ? AppColors.backgroundLight
                                     : (isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight),
                               ).copyWith(
                                 fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
@@ -238,7 +249,7 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
                 children: [
                   Expanded(
                     child: OutlinedButton(
-                      onPressed: () => context.read<BookingCubit>().cancelBooking(booking.id),
+                      onPressed: () async => await bookingCubit.cancelBooking(booking.id),
                       style: OutlinedButton.styleFrom(
                         side: const BorderSide(color: AppColors.error, width: 1.5),
                         shape: RoundedRectangleBorder(

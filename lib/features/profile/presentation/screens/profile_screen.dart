@@ -1,4 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:field_time/app/router/app_router.dart';
+import 'package:field_time/core/utils/get_it.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -17,10 +19,25 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
+  late final AuthCubit authCubit;
+  late final ProfileCubit profileCubit;
+
+
   @override
   void initState() {
     super.initState();
-    context.read<ProfileCubit>().loadProfile();
+    authCubit = getIt<AuthCubit>();
+    profileCubit = getIt<ProfileCubit>();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await profileCubit.loadProfile();
+    });
+  }
+
+  @override
+  void dispose() {
+    authCubit.close();
+    profileCubit.close();
+    super.dispose();
   }
 
   @override
@@ -175,8 +192,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           textColor: AppColors.error,
                           iconColor: AppColors.error,
                           onTap: () {
-                            context.read<AuthCubit>().logout();
-                            context.go('/welcome');
+                            authCubit.logout();
+                            context.pushReplacementNamed(
+                              AppRouter.welcomeName,
+                            );
                           },
                           isDark: isDark,
                         ),

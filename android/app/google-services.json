@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "412892308596",
+    "project_id": "field-time-44a01",
+    "storage_bucket": "field-time-44a01.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:412892308596:android:2c0e108ee8a3e062b05d21",
+        "android_client_info": {
+          "package_name": "com.example.field_time"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDut7FxKV-iYdB39vZxCnqSV8ED28NCDKk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

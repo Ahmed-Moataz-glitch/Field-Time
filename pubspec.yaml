@@ -25,6 +25,13 @@ dependencies:
   shimmer: ^3.0.0
   cached_network_image: ^3.4.1
   flutter_native_splash: ^2.4.7
+  firebase_core: ^4.13.0
+  firebase_auth: ^6.5.7
+  google_sign_in: ^6.3.0
+  pin_code_fields: ^9.4.0
+  toastification: ^3.0.3
+  get_it: ^9.2.1
+  flutter_secure_storage: ^10.3.1
 
 dev_dependencies:
   flutter_test:
@@ -39,7 +46,7 @@ flutter:
 
   assets:
     - assets/images/
-  #   - images/a_dot_ham.jpeg
+    - assets/icons/
 
   # fonts:
   #   - family: Schyler

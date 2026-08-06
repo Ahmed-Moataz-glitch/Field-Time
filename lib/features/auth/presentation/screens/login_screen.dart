@@ -1,3 +1,9 @@
+import 'package:field_time/app/router/app_router.dart';
+import 'package:field_time/core/utils/app_assets.dart';
+import 'package:field_time/core/utils/app_dialogs.dart';
+import 'package:field_time/core/utils/get_it.dart';
+import 'package:field_time/core/widgets/secondary_outlined_button.dart';
+import 'package:field_time/core/widgets/validator.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -18,23 +24,35 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
+  late final AuthCubit _authCubit;
+  late final GlobalKey<FormState> _formKey;
+  late final TextEditingController _emailController;
+  late final TextEditingController _passwordController;
+
+  @override
+  void initState() {
+    super.initState();
+    _authCubit = getIt<AuthCubit>();
+    _formKey = GlobalKey<FormState>();
+    _emailController = TextEditingController();
+    _passwordController = TextEditingController();
+  }
 
   @override
   void dispose() {
+    _authCubit.close();
+    _formKey.currentState?.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
 
-  void _onLoginPressed() {
+  void _onLoginPressed() async {
     if (_formKey.currentState?.validate() ?? false) {
-      context.read<AuthCubit>().login(
-            _emailController.text.trim(),
-            _passwordController.text.trim(),
-          );
+      await _authCubit.loginWithEmailAndPassword(
+        _emailController.text.trim(),
+        _passwordController.text.trim(),
+      );
     }
   }
 
@@ -52,14 +70,28 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
       body: BlocListener<AuthCubit, AuthState>(
         listener: (context, state) {
+          if (state is AuthLoading) {
+            AppDialogs.showLoadingDialog(context, title: 'جار تسجيل الدخول...');
+          }
+          if (state is LoginWithGoogleSuccess) {
+            context.pushReplacementNamed(AppRouter.appSectionName);
+          }
+          if (state is LoginWithGoogleError) {
+            AppDialogs.showSnackBar(
+              context: context,
+              message: state.message,
+              isError: true,
+            );
+          }
           if (state is Authenticated) {
-            context.go('/main');
+            context.pop(); // Close the loading dialog
+            context.pushReplacementNamed(AppRouter.appSectionName);
           } else if (state is AuthError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.message),
-                backgroundColor: AppColors.error,
-              ),
+            context.pop(); // Close the loading dialog
+            AppDialogs.showSnackBar(
+              context: context,
+              message: state.message,
+              isError: true,
             );
           }
         },
@@ -75,14 +107,18 @@ class _LoginScreenState extends State<LoginScreen> {
                   Text(
                     '${l10n.login} 👋',
                     style: AppTypography.heading1(
-                      color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                      color: isDark
+                          ? AppColors.textPrimaryDark
+                          : AppColors.textPrimaryLight,
                     ),
                   ),
                   SizedBox(height: 8.h),
                   Text(
                     'مرحباً بك مجدداً، أدخل بياناتك للمتابعة',
                     style: AppTypography.body(
-                      color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                      color: isDark
+                          ? AppColors.textSecondaryDark
+                          : AppColors.textSecondaryLight,
                     ),
                   ),
                   SizedBox(height: 36.h),
@@ -91,16 +127,11 @@ class _LoginScreenState extends State<LoginScreen> {
                     controller: _emailController,
                     hintText: l10n.email,
                     keyboardType: TextInputType.emailAddress,
-                    prefixIcon: const Icon(Icons.email_outlined, color: AppColors.iconGrey),
-                    validator: (val) {
-                      if (val == null || val.trim().isEmpty) {
-                        return 'يرجى إدخال البريد الإلكتروني';
-                      }
-                      if (!val.contains('@')) {
-                        return 'بريد إلكتروني غير صالح';
-                      }
-                      return null;
-                    },
+                    prefixIcon: const Icon(
+                      Icons.email_outlined,
+                      color: AppColors.iconGrey,
+                    ),
+                    validator: Validator.validateEmail,
                   ),
                   SizedBox(height: 16.h),
                   // Password Field
@@ -108,22 +139,20 @@ class _LoginScreenState extends State<LoginScreen> {
                     controller: _passwordController,
                     hintText: l10n.password,
                     isPassword: true,
-                    prefixIcon: const Icon(Icons.lock_outline, color: AppColors.iconGrey),
-                    validator: (val) {
-                      if (val == null || val.trim().isEmpty) {
-                        return 'يرجى إدخال كلمة المرور';
-                      }
-                      if (val.trim().length < 6) {
-                        return 'كلمة المرور لا تقل عن 6 أحرف';
-                      }
-                      return null;
-                    },
+                    prefixIcon: const Icon(
+                      Icons.lock_outline,
+                      color: AppColors.iconGrey,
+                    ),
+                    validator: Validator.validatePassword,
                   ),
                   SizedBox(height: 12.h),
                   Align(
                     alignment: Alignment.centerLeft,
                     child: TextButton(
-                      onPressed: () => context.push('/forgot-password'),
+                      onPressed: () => context.pushNamed(
+                        AppRouter.forgetPasswordName,
+                        extra: _authCubit,
+                      ),
                       child: Text(
                         l10n.forgotPassword,
                         style: AppTypography.caption(color: AppColors.primary),
@@ -140,23 +169,39 @@ class _LoginScreenState extends State<LoginScreen> {
                       );
                     },
                   ),
-                  SizedBox(height: 24.h),
+                  SizedBox(height: 16.h),
+                  BlocBuilder<AuthCubit, AuthState>(
+                    builder: (context, state) {
+                      return SecondaryOutlinedButton(
+                        title: 'تسجيل الدخول باستخدام جوجل',
+                        icon: AppAssets.googleIcon,
+                        isLoading: state is LoginWithGoogleLoading,
+                        onPressed: () async {
+                          await _authCubit.loginWithGoogle();
+                        },
+                      );
+                    },
+                  ),
+                  SizedBox(height: 32.h),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
                         '${l10n.dontHaveAccount} ',
                         style: AppTypography.body(
-                          color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                          color: isDark
+                              ? AppColors.textSecondaryDark
+                              : AppColors.textSecondaryLight,
                         ),
                       ),
                       GestureDetector(
-                        onTap: () => context.push('/register'),
+                        onTap: () =>
+                            context.pushReplacementNamed(AppRouter.registerName),
                         child: Text(
                           l10n.register,
-                          style: AppTypography.body(color: AppColors.primary).copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: AppTypography.body(
+                            color: AppColors.primary,
+                          ).copyWith(fontWeight: FontWeight.bold),
                         ),
                       ),
                     ],
