@@ -1,6 +1,4 @@
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:field_time/app/router/app_router.dart';
-import 'package:field_time/core/utils/get_it.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -19,25 +17,10 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  late final AuthCubit authCubit;
-  late final ProfileCubit profileCubit;
-
-
   @override
   void initState() {
     super.initState();
-    authCubit = getIt<AuthCubit>();
-    profileCubit = getIt<ProfileCubit>();
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await profileCubit.loadProfile();
-    });
-  }
-
-  @override
-  void dispose() {
-    authCubit.close();
-    profileCubit.close();
-    super.dispose();
+    context.read<ProfileCubit>().loadProfile();
   }
 
   @override
@@ -145,6 +128,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     child: Column(
                       children: [
                         _buildOptionTile(
+                          icon: Icons.storefront_outlined,
+                          title: 'لوحة تحكم صاحب الملعب',
+                          textColor: AppColors.primary,
+                          iconColor: AppColors.primary,
+                          onTap: () => context.push('/owner-dashboard'),
+                          isDark: isDark,
+                        ),
+                        const Divider(height: 1, color: AppColors.greyBorder),
+                        _buildOptionTile(
                           icon: Icons.person_outline,
                           title: 'المعلومات الشخصية',
                           onTap: () {},
@@ -192,10 +184,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           textColor: AppColors.error,
                           iconColor: AppColors.error,
                           onTap: () {
-                            authCubit.logout();
-                            context.pushReplacementNamed(
-                              AppRouter.welcomeName,
-                            );
+                            context.read<AuthCubit>().logout();
+                            context.go('/welcome');
                           },
                           isDark: isDark,
                         ),

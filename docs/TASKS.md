@@ -14,63 +14,63 @@ In Progress
 
 ## Project Setup
 
-- [ ] Create Flutter project
-- [ ] Configure Material 3
-- [ ] Configure ScreenUtil
-- [ ] Configure GoRouter
-- [ ] Configure flutter_bloc
-- [ ] Configure Supabase
-- [ ] Configure Themes
-- [ ] Configure Localization
-- [ ] Configure Assets
-- [ ] Configure App Icons
+- [x] Create Flutter project
+- [x] Configure Material 3
+- [x] Configure ScreenUtil
+- [x] Configure GoRouter
+- [x] Configure flutter_bloc
+- [x] Configure Supabase
+- [x] Configure Themes
+- [x] Configure Localization
+- [x] Configure Assets
+- [x] Configure App Icons
 
 ---
 
 # Authentication
 
-- [ ] Login Screen
-- [ ] Register Screen
-- [ ] Forgot Password
-- [ ] Google Login
-- [ ] Session Management
-- [ ] Logout
+- [x] Login Screen
+- [x] Register Screen
+- [x] Forgot Password
+- [x] Google Login
+- [x] Session Management
+- [x] Logout
 
 ---
 
 # Home
 
-- [ ] Search
-- [ ] Categories
-- [ ] Offers
-- [ ] Nearby Fields
-- [ ] Popular Fields
-- [ ] Recommended Fields
-- [ ] Pull To Refresh
+- [x] Search
+- [x] Categories
+- [x] Offers
+- [x] Nearby Fields
+- [x] Popular Fields
+- [x] Recommended Fields
+- [x] Pull To Refresh
 
 ---
 
 # Field Details
 
-- [ ] Image Slider
-- [ ] Rating
-- [ ] Description
-- [ ] Google Map
-- [ ] Facilities
-- [ ] Reviews
-- [ ] Available Hours
-- [ ] Book Button
+- [x] Image Slider
+- [x] Rating
+- [x] Description
+- [x] Google Map
+- [x] Facilities
+- [x] Reviews
+- [x] Available Hours
+- [x] Book Button
 
 ---
 
 # Booking
 
-- [ ] Date Picker
-- [ ] Time Picker
-- [ ] Booking Summary
-- [ ] Instant Booking
-- [ ] Prevent Duplicate Booking
-- [ ] Booking Success
+- [x] Date Picker
+- [x] Time Picker
+- [x] Booking Summary
+- [x] Instant Booking
+- [x] Prevent Duplicate Booking
+- [x] Booking Success
 
 ---
 
@@ -109,24 +109,24 @@ In Progress
 
 # Owner Dashboard
 
-- [ ] Add Football Field
-- [ ] Edit Football Field
-- [ ] Delete Football Field
-- [ ] Upload Images
-- [ ] Manage Prices
-- [ ] Manage Availability
-- [ ] View Bookings
-- [ ] Statistics
+- [x] Add Football Field
+- [x] Edit Football Field
+- [x] Delete Football Field
+- [x] Upload Images
+- [x] Manage Prices
+- [x] Manage Availability
+- [x] View Bookings
+- [x] Statistics
 
 ---
 
 # Database
 
-- [ ] Create Tables
-- [ ] Create Indexes
-- [ ] Create RLS Policies
-- [ ] Create Storage Buckets
-- [ ] Create Realtime
+- [x] Create Tables
+- [x] Create Indexes
+- [x] Create RLS Policies
+- [x] Create Storage Buckets
+- [x] Create Realtime
 
 ---
 

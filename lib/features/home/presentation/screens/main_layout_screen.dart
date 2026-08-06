@@ -6,14 +6,14 @@ import 'package:field_time/features/favorites/presentation/screens/favorites_scr
 import 'package:field_time/features/home/presentation/screens/home_screen.dart';
 import 'package:field_time/features/profile/presentation/screens/profile_screen.dart';
 
-class AppSection extends StatefulWidget {
-  const AppSection({super.key});
+class MainLayoutScreen extends StatefulWidget {
+  const MainLayoutScreen({super.key});
 
   @override
-  State<AppSection> createState() => _AppSectionState();
+  State<MainLayoutScreen> createState() => _MainLayoutScreenState();
 }
 
-class _AppSectionState extends State<AppSection> {
+class _MainLayoutScreenState extends State<MainLayoutScreen> {
   int _currentIndex = 0;
 
   final List<Widget> _pages = const [
@@ -28,7 +28,10 @@ class _AppSectionState extends State<AppSection> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      body: IndexedStack(index: _currentIndex, children: _pages),
+      body: IndexedStack(
+        index: _currentIndex,
+        children: _pages,
+      ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: isDark ? AppColors.cardDark : AppColors.cardLight,
@@ -50,12 +53,10 @@ class _AppSectionState extends State<AppSection> {
           type: BottomNavigationBarType.fixed,
           backgroundColor: isDark ? AppColors.cardDark : AppColors.cardLight,
           selectedItemColor: AppColors.primary,
-          unselectedItemColor: isDark
-              ? AppColors.textSecondaryDark
-              : AppColors.iconGrey,
-          selectedLabelStyle: AppTypography.small(
-            color: AppColors.primary,
-          ).copyWith(fontWeight: FontWeight.bold),
+          unselectedItemColor: isDark ? AppColors.textSecondaryDark : AppColors.iconGrey,
+          selectedLabelStyle: AppTypography.small(color: AppColors.primary).copyWith(
+            fontWeight: FontWeight.bold,
+          ),
           unselectedLabelStyle: AppTypography.small(color: AppColors.iconGrey),
           elevation: 0,
           items: const [

@@ -70,7 +70,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get popularFields => 'Popular Fields';
 
   @override
+  String get recommendedFields => 'Recommended Fields';
+
+  @override
   String get topRatedFields => 'Top Rated Fields';
+
+  @override
+  String get specialOffers => 'Special Offers';
 
   @override
   String get categories => 'Categories';
@@ -186,4 +192,58 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get retry => 'Retry';
+
+  @override
+  String get filterTitle => 'Filter Fields';
+
+  @override
+  String get priceRange => 'Price Range (EGP / hr)';
+
+  @override
+  String get fieldType => 'Field Format';
+
+  @override
+  String get grassType => 'Grass Type';
+
+  @override
+  String get indoorOnly => 'Indoor (Hall)';
+
+  @override
+  String get availableToday => 'Available Today Only';
+
+  @override
+  String get minRating => 'Minimum Rating';
+
+  @override
+  String get resetFilters => 'Reset';
+
+  @override
+  String get applyFilters => 'Apply Filters';
+
+  @override
+  String get selectLocation => 'Select City / Area';
+
+  @override
+  String get allCities => 'All Cities';
+
+  @override
+  String get cairo => 'Cairo';
+
+  @override
+  String get giza => 'Giza';
+
+  @override
+  String get alexandria => 'Alexandria';
+
+  @override
+  String get october => '6th of October';
+
+  @override
+  String get taghmow => '5th Settlement';
+
+  @override
+  String get greetingUser => 'Hello';
+
+  @override
+  String get availableBadge => 'Available Today';
 }
