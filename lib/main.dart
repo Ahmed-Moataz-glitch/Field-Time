@@ -33,7 +33,6 @@ class FieldTimeApp extends StatefulWidget {
   @override
   State<FieldTimeApp> createState() => _FieldTimeAppState();
 }
-
 class _FieldTimeAppState extends State<FieldTimeApp> {
   late final LocaleCubit _localeCubit;
   late final AuthCubit _authCubit;
