@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:field_time/core/errors/failures.dart';
 import 'package:field_time/features/booking/data/models/booking_model.dart';
 import 'package:field_time/features/booking/data/repositories/booking_repository.dart';
 import 'package:field_time/features/booking/presentation/cubit/booking_state.dart';
@@ -23,6 +24,18 @@ class BookingCubit extends Cubit<BookingState> {
       final currentState = state as BookingLoaded;
       emit(currentState.copyWith(activeTab: tab));
     }
+  }
+
+  Future<bool> isSlotAvailable({
+    required String fieldId,
+    required String date,
+    required String startTime,
+  }) async {
+    return await _repository.checkIsSlotAvailable(
+      fieldId: fieldId,
+      date: date,
+      startTime: startTime,
+    );
   }
 
   Future<BookingModel?> createBooking({
@@ -55,6 +68,9 @@ class BookingCubit extends Cubit<BookingState> {
         emit((state as BookingLoaded).copyWith(lastCreatedBooking: booking));
       }
       return booking;
+    } on DuplicateBookingFailure catch (e) {
+      emit(BookingDuplicateError(e.message));
+      return null;
     } catch (e) {
       emit(BookingError(e.toString()));
       return null;

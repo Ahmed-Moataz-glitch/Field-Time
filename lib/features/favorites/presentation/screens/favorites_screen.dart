@@ -1,5 +1,3 @@
-import 'package:field_time/app/router/app_router.dart';
-import 'package:field_time/core/utils/get_it.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -17,21 +15,10 @@ class FavoritesScreen extends StatefulWidget {
 }
 
 class _FavoritesScreenState extends State<FavoritesScreen> {
-  late final FavoritesCubit favoritesCubit;
-  
   @override
   void initState() {
     super.initState();
-    favoritesCubit = getIt<FavoritesCubit>();
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await favoritesCubit.loadFavorites();
-    });
-  }
-
-  @override
-  void dispose() {
-    favoritesCubit.close();
-    super.dispose();
+    context.read<FavoritesCubit>().loadFavorites();
   }
 
   @override
@@ -78,10 +65,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                   final field = state.favorites[index];
                   return FieldCard(
                     field: field,
-                    onTap: () => context.pushNamed(
-                      AppRouter.fieldDetailsName,
-                      queryParameters: {'fieldId': field.id},
-                    ),
+                    onTap: () => context.push('/field-details/${field.id}'),
                   );
                 },
               );

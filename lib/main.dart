@@ -1,11 +1,3 @@
-import 'package:field_time/core/services/firebase_service.dart';
-import 'package:field_time/core/utils/get_it.dart';
-import 'package:field_time/features/auth/presentation/cubit/auth_cubit.dart';
-import 'package:field_time/features/booking/presentation/cubit/booking_cubit.dart';
-import 'package:field_time/features/favorites/presentation/cubit/favorites_cubit.dart';
-import 'package:field_time/features/field_details/presentation/cubit/field_details_cubit.dart';
-import 'package:field_time/features/home/presentation/cubit/home_cubit.dart';
-import 'package:field_time/features/profile/presentation/cubit/profile_cubit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -17,17 +9,23 @@ import 'package:field_time/core/localization/locale_cubit.dart';
 import 'package:field_time/core/localization/locale_state.dart';
 import 'package:field_time/core/services/supabase_service.dart';
 import 'package:field_time/core/utils/app_constants.dart';
+import 'package:field_time/features/auth/data/repositories/auth_repository.dart';
+import 'package:field_time/features/auth/presentation/cubit/auth_cubit.dart';
+import 'package:field_time/features/booking/data/repositories/booking_repository.dart';
+import 'package:field_time/features/booking/presentation/cubit/booking_cubit.dart';
+import 'package:field_time/features/favorites/presentation/cubit/favorites_cubit.dart';
+import 'package:field_time/features/home/data/repositories/field_repository.dart';
+import 'package:field_time/features/home/presentation/cubit/home_cubit.dart';
+import 'package:field_time/features/profile/presentation/cubit/profile_cubit.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await SupabaseService.init();
-  await FirebaseService.init();
-  await setupGetIt();
-  await AppRouter.initializeRouter();
+
   runApp(const FieldTimeApp());
 }
 
-class FieldTimeApp extends StatefulWidget {
+class FieldTimeApp extends StatelessWidget {
   const FieldTimeApp({super.key});
 
   @override
@@ -68,23 +66,25 @@ class _FieldTimeAppState extends State<FieldTimeApp> {
 
   @override
   Widget build(BuildContext context) {
-    return ScreenUtilInit(
-      designSize: const Size(375, 812),
-      minTextAdapt: true,
-      splitScreenMode: true,
-      builder: (context, child) {
-        return MultiBlocProvider(
-          providers: [
-            BlocProvider<LocaleCubit>.value(value: _localeCubit),
-            BlocProvider<AuthCubit>.value(value: _authCubit),
-            BlocProvider<HomeCubit>.value(value: _homeCubit),
-            BlocProvider<FieldDetailsCubit>.value(value: _fieldDetailsCubit),
-            BlocProvider<BookingCubit>.value(value: _bookingCubit),
-            BlocProvider<FavoritesCubit>.value(value: _favoritesCubit),
-            BlocProvider<ProfileCubit>.value(value: _profileCubit),
-          ],
-          child: BlocBuilder<LocaleCubit, LocaleState>(
-            bloc: _localeCubit,
+    final fieldRepo = FieldRepository();
+    final bookingRepo = BookingRepository();
+    final authRepo = AuthRepository();
+
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(create: (_) => LocaleCubit()),
+        BlocProvider(create: (_) => AuthCubit(authRepo)),
+        BlocProvider(create: (_) => HomeCubit(fieldRepo)),
+        BlocProvider(create: (_) => BookingCubit(bookingRepo)),
+        BlocProvider(create: (_) => ProfileCubit(authRepo)),
+        BlocProvider(create: (_) => FavoritesCubit(fieldRepo)),
+      ],
+      child: ScreenUtilInit(
+        designSize: const Size(375, 812),
+        minTextAdapt: true,
+        splitScreenMode: true,
+        builder: (context, child) {
+          return BlocBuilder<LocaleCubit, LocaleState>(
             builder: (context, localeState) {
               return MaterialApp.router(
                 title: AppConstants.appName,
@@ -103,9 +103,9 @@ class _FieldTimeAppState extends State<FieldTimeApp> {
                 routerConfig: AppRouter.router,
               );
             },
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 }

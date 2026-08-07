@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:field_time/features/home/data/repositories/field_repository.dart';
+import 'package:intl/intl.dart';
 import 'package:field_time/features/field_details/presentation/cubit/field_details_state.dart';
+import 'package:field_time/features/home/data/repositories/field_repository.dart';
 
 class FieldDetailsCubit extends Cubit<FieldDetailsState> {
   final FieldRepository _repository;
@@ -12,16 +13,34 @@ class FieldDetailsCubit extends Cubit<FieldDetailsState> {
     try {
       final field = await _repository.getFieldById(fieldId);
       if (field != null) {
+        final reviews = await _repository.getReviewsByFieldId(fieldId);
+        final allFields = await _repository.getFields();
+        final related = allFields.where((f) => f.id != fieldId).take(4).toList();
+
+        final todayStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
+
         emit(FieldDetailsLoaded(
           field: field,
-          selectedDate: 'الجمعة 24 مايو',
-          selectedTimeSlot: '11:00',
+          reviews: reviews,
+          relatedFields: related,
+          selectedDate: todayStr,
+          selectedTimeSlot: '18:00',
+          currentImageIndex: 0,
+          isFavorite: field.isFavorite,
+          isDescriptionExpanded: false,
         ));
       } else {
         emit(const FieldDetailsError('الملعب غير موجود'));
       }
     } catch (e) {
-      emit(FieldDetailsError(e.toString()));
+      emit(FieldDetailsError('فشل تحميل تفاصيل الملعب: ${e.toString()}'));
+    }
+  }
+
+  void changeImageIndex(int index) {
+    if (state is FieldDetailsLoaded) {
+      final currentState = state as FieldDetailsLoaded;
+      emit(currentState.copyWith(currentImageIndex: index));
     }
   }
 
@@ -36,6 +55,29 @@ class FieldDetailsCubit extends Cubit<FieldDetailsState> {
     if (state is FieldDetailsLoaded) {
       final currentState = state as FieldDetailsLoaded;
       emit(currentState.copyWith(selectedTimeSlot: timeSlot));
+    }
+  }
+
+  void toggleDescriptionExpand() {
+    if (state is FieldDetailsLoaded) {
+      final currentState = state as FieldDetailsLoaded;
+      emit(currentState.copyWith(isDescriptionExpanded: !currentState.isDescriptionExpanded));
+    }
+  }
+
+  Future<void> toggleFavorite() async {
+    if (state is FieldDetailsLoaded) {
+      final currentState = state as FieldDetailsLoaded;
+      final newFavState = !currentState.isFavorite;
+
+      emit(currentState.copyWith(
+        isFavorite: newFavState,
+        field: currentState.field.copyWith(isFavorite: newFavState),
+      ));
+
+      try {
+        await _repository.toggleFavorite(currentState.field.id, 'user-id');
+      } catch (_) {}
     }
   }
 }
