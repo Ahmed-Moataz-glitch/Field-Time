@@ -14,12 +14,12 @@ import 'package:go_router/go_router.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
 
 class VerifyEmailScreen extends StatefulWidget {
-  final AuthCubit authCubit;
+  final AuthCubit? authCubit;
   final String? email;
   const VerifyEmailScreen({
     super.key,
-    required this.email,
-    required this.authCubit,
+    this.email,
+    this.authCubit,
   });
 
   @override
@@ -27,6 +27,7 @@ class VerifyEmailScreen extends StatefulWidget {
 }
 
 class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
+  AuthCubit get cubit => widget.authCubit ?? context.read<AuthCubit>();
   late PinInputController otpController;
 
   @override
@@ -130,7 +131,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                 title: "تحقق",
                 onPressed: () async {
                   // debugPrint('Verification code: ${verificationController.text}');
-                  await widget.authCubit.validateOtp(
+                  await cubit.validateOtp(
                     email: widget.email ?? '',
                     otp: otpController.text.trim(),
                   );
@@ -150,7 +151,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                       ),
                       recognizer: TapGestureRecognizer()
                         ..onTap = () async {
-                          await widget.authCubit.sendOtpForNewUser(
+                          await cubit.sendOtpForNewUser(
                             widget.email ?? '',
                           );
                           // AppDialogs.showSnackBar(

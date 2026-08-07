@@ -34,6 +34,7 @@ abstract class AppRouter {
   static const String resetPassword = '/reset-password';
   static const String successfulResetPassword = '/successful-reset-password';
   static const String main = '/main';
+  static const String appSection = '/main';
   static const String fieldDetails = '/field-details/:id';
   static const String booking = '/booking';
   static const String bookingSuccess = '/booking-success';
@@ -45,6 +46,21 @@ abstract class AppRouter {
   static const String ownerStats = '/owner-stats';
   static const String manageCoupons = '/manage-coupons';
   static const String createCoupon = '/create-coupon';
+
+  static const String welcomeName = 'welcome';
+  static const String loginName = 'login';
+  static const String registerName = 'register';
+  static const String forgotPasswordName = 'forgot-password';
+  static const String forgetPasswordName = 'forget-password';
+  static const String verifyEmailName = 'verify-email';
+  static const String verifyCodeName = 'verify-code';
+  static const String resetPasswordName = 'reset-password';
+  static const String successfulResetPasswordName = 'successful-reset-password';
+  static const String mainName = 'main';
+  static const String appSectionName = 'main';
+  static const String fieldDetailsName = 'field-details';
+  static const String bookingName = 'booking';
+  static const String bookingSuccessName = 'booking-success';
 
   static final router = GoRouter(
     navigatorKey: navigatorKey,
@@ -58,18 +74,22 @@ abstract class AppRouter {
     routes: [
       GoRoute(
         path: welcome,
+        name: welcomeName,
         builder: (context, state) => const WelcomeScreen(),
       ),
       GoRoute(
         path: login,
+        name: loginName,
         builder: (context, state) => const LoginScreen(),
       ),
       GoRoute(
         path: register,
+        name: registerName,
         builder: (context, state) => const RegisterScreen(),
       ),
       GoRoute(
         path: forgotPassword,
+        name: forgotPasswordName,
         builder: (context, state) {
           final authCubit = state.extra as AuthCubit?;
           return ForgetPasswordScreen(authCubit: authCubit);
@@ -77,6 +97,7 @@ abstract class AppRouter {
       ),
       GoRoute(
         path: forgetPassword,
+        name: forgetPasswordName,
         builder: (context, state) {
           final authCubit = state.extra as AuthCubit?;
           return ForgetPasswordScreen(authCubit: authCubit);
@@ -84,6 +105,7 @@ abstract class AppRouter {
       ),
       GoRoute(
         path: verifyEmail,
+        name: verifyEmailName,
         builder: (context, state) {
           final authCubit = state.extra as AuthCubit?;
           final email = state.uri.queryParameters['email'];
@@ -92,6 +114,7 @@ abstract class AppRouter {
       ),
       GoRoute(
         path: verifyCode,
+        name: verifyCodeName,
         builder: (context, state) {
           final authCubit = state.extra as AuthCubit?;
           final email = state.uri.queryParameters['email'];
@@ -100,6 +123,7 @@ abstract class AppRouter {
       ),
       GoRoute(
         path: resetPassword,
+        name: resetPasswordName,
         builder: (context, state) {
           final authCubit = state.extra as AuthCubit?;
           return ResetPasswordScreen(authCubit: authCubit);
@@ -107,6 +131,7 @@ abstract class AppRouter {
       ),
       GoRoute(
         path: successfulResetPassword,
+        name: successfulResetPasswordName,
         builder: (context, state) => const SuccessfulResetPasswordScreen(),
       ),
       GoRoute(

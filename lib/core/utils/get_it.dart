@@ -40,7 +40,7 @@ Future<void> setupGetIt() async {
   getIt.registerSingleton<BookingRepository>(BookingRepository());
   getIt.registerFactory<BookingCubit>(
     () => BookingCubit(
-      getIt<BookingRepository>(),
+      repository: getIt<BookingRepository>(),
     ),
   );
 

@@ -12,14 +12,15 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
 class ForgetPasswordScreen extends StatefulWidget {
-  final AuthCubit authCubit;
-  const ForgetPasswordScreen({super.key, required this.authCubit});
+  final AuthCubit? authCubit;
+  const ForgetPasswordScreen({super.key, this.authCubit});
 
   @override
   State<ForgetPasswordScreen> createState() => _ForgetPasswordScreenState();
 }
 
 class _ForgetPasswordScreenState extends State<ForgetPasswordScreen> {
+  AuthCubit get cubit => widget.authCubit ?? context.read<AuthCubit>();
   final formKey = GlobalKey<FormState>();
   late final TextEditingController emailController;
 
@@ -124,16 +125,10 @@ class _ForgetPasswordScreenState extends State<ForgetPasswordScreen> {
                     PrimaryButton(
                       title: 'التالي',
                       onPressed: () async {
-                        // if(formKey.currentState!.validate()){
-                        //   Navigator.of(context).pushNamed(AppRoutes.verifyCode);
-                        // }
                         if (formKey.currentState!.validate()) {
-                          await widget.authCubit.sendOtpForExistingUser(
+                          await cubit.sendOtpForExistingUser(
                             emailController.text.trim(),
                           );
-                          // if (!context.mounted) {
-                          //   return;
-                          // }
                           // AppDialogs.showSnackBar(
                           //   context: context,
                           //   message: 'Code is sent to email',

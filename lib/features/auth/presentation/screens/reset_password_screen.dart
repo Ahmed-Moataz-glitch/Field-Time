@@ -14,14 +14,15 @@ import 'package:go_router/go_router.dart';
 import 'package:toastification/toastification.dart';
 
 class ResetPasswordScreen extends StatefulWidget {
-  final AuthCubit authCubit;
-  const ResetPasswordScreen({super.key, required this.authCubit});
+  final AuthCubit? authCubit;
+  const ResetPasswordScreen({super.key, this.authCubit});
 
   @override
   State<ResetPasswordScreen> createState() => _ResetPasswordScreenState();
 }
 
 class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
+  AuthCubit get cubit => widget.authCubit ?? context.read<AuthCubit>();
   final formKey = GlobalKey<FormState>();
   late final TextEditingController newPasswordController;
   late final TextEditingController confirmPasswordController;
@@ -141,12 +142,9 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                       title: "إعادة تعيين كلمة المرور",
                       onPressed: () async {
                         if (formKey.currentState!.validate()) {
-                          await widget.authCubit.resetPassword(
+                          await cubit.resetPassword(
                             newPasswordController.text.trim(),
                           );
-                          // if (!context.mounted) {
-                          //   return;
-                          // }
                         }
                       },
                     ),
