@@ -42,6 +42,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         title: Text(
           l10n?.favorites ?? (isArabic ? 'المفضلة' : 'Favorites'),
           style: AppTypography.heading3(

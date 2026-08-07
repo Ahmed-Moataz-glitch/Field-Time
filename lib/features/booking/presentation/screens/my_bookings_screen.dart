@@ -84,6 +84,7 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         title: Text(
           l10n?.bookings ?? (isArabic ? 'حجوزاتي' : 'My Bookings'),
           style: AppTypography.heading3(

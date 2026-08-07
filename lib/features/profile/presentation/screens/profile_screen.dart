@@ -156,6 +156,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         title: Text(
           l10n?.profile ?? (isArabic ? 'الملف الشخصي' : 'Profile'),
           style: AppTypography.heading3(

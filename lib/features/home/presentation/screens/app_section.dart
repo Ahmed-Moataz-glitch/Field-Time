@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:field_time/core/constants/app_colors.dart';
-import 'package:field_time/core/constants/app_typography.dart';
 import 'package:field_time/features/booking/presentation/screens/my_bookings_screen.dart';
 import 'package:field_time/features/favorites/presentation/cubit/favorites_cubit.dart';
 import 'package:field_time/features/favorites/presentation/screens/favorites_screen.dart';
@@ -14,10 +13,7 @@ import 'package:field_time/l10n/generated/app_localizations.dart';
 class AppSection extends StatefulWidget {
   final int initialIndex;
 
-  const AppSection({
-    super.key,
-    this.initialIndex = 0,
-  });
+  const AppSection({super.key, this.initialIndex = 0});
 
   @override
   State<AppSection> createState() => _AppSectionState();
@@ -41,10 +37,10 @@ class _AppSectionState extends State<AppSection> {
   ];
 
   final List<IconData> _filledIcons = const [
-    Icons.home,
-    Icons.calendar_today,
-    Icons.favorite,
-    Icons.person,
+    Icons.home_rounded,
+    Icons.calendar_today_rounded,
+    Icons.favorite_rounded,
+    Icons.person_rounded,
   ];
 
   @override
@@ -64,65 +60,115 @@ class _AppSectionState extends State<AppSection> {
       l10n?.profile ?? 'الملف الشخصي',
     ];
 
+    final navBgColor = isDark ? AppColors.cardDark : AppColors.cardLight;
+    final unselectedColor = isDark ? AppColors.textSecondaryDark : AppColors.iconGrey;
+
     return Scaffold(
       body: IndexedStack(
         index: _currentIndex,
         children: _pages,
       ),
-      bottomNavigationBar: AnimatedBottomNavigationBar.builder(
-        itemCount: _pages.length,
-        tabBuilder: (int index, bool isActive) {
-          final color = isActive
-              ? AppColors.primary
-              : (isDark ? AppColors.textSecondaryDark : AppColors.iconGrey);
-
-          return Column(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                isActive ? _filledIcons[index] : _outlinedIcons[index],
-                size: 24.r,
-                color: color,
-              ),
-              SizedBox(height: 4.h),
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: 2.w),
-                child: Text(
-                  labels[index],
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTypography.small(color: color).copyWith(
-                    fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-                    fontSize: 11.sp,
-                    fontFamily: 'Cairo',
-                  ),
-                ),
-              ),
-            ],
-          );
-        },
-        activeIndex: _currentIndex,
-        gapLocation: GapLocation.none,
-        notchSmoothness: NotchSmoothness.smoothEdge,
-        leftCornerRadius: 20,
-        rightCornerRadius: 20,
-        backgroundColor: isDark ? AppColors.cardDark : AppColors.cardLight,
-        height: 68.h,
-        splashColor: AppColors.primary.withValues(alpha: 0.1),
-        shadow: BoxShadow(
-          color: Colors.black.withValues(alpha: 0.08),
-          blurRadius: 16,
-          offset: const Offset(0, -4),
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: navBgColor,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.08),
+              blurRadius: 20,
+              spreadRadius: 2,
+              offset: const Offset(0, -4),
+            ),
+          ],
         ),
-        onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-          if (index == 2) {
-            context.read<FavoritesCubit>().loadFavorites(isRefresh: true);
-          }
-        },
+        child: SafeArea(
+          top: false,
+          child: AnimatedBottomNavigationBar.builder(
+            itemCount: _pages.length,
+            activeIndex: _currentIndex,
+            height: 64.h,
+            gapLocation: GapLocation.none,
+            notchSmoothness: NotchSmoothness.smoothEdge,
+            elevation: 0,
+            backgroundColor: navBgColor,
+            splashColor: AppColors.primary.withValues(alpha: 0.15),
+            splashSpeedInMilliseconds: 300,
+            onTap: (index) {
+              setState(() {
+                _currentIndex = index;
+              });
+              if (index == 2) {
+                try {
+                  context.read<FavoritesCubit>().loadFavorites(isRefresh: true);
+                } catch (_) {}
+              }
+            },
+            tabBuilder: (index, isActive) {
+              final activeColor = AppColors.primary;
+              final color = isActive ? activeColor : unselectedColor;
+
+              return SizedBox.expand(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Active Top Indicator Pill
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 250),
+                      curve: Curves.easeInOut,
+                      height: 3.h,
+                      width: isActive ? 20.w : 0.w,
+                      decoration: BoxDecoration(
+                        color: isActive ? AppColors.primary : Colors.transparent,
+                        borderRadius: BorderRadius.circular(2.r),
+                        boxShadow: isActive
+                            ? [
+                                BoxShadow(
+                                  color: AppColors.primary.withValues(alpha: 0.5),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ]
+                            : [],
+                      ),
+                    ),
+                    const Spacer(),
+
+                    // Icon with scale micro-animation
+                    AnimatedScale(
+                      scale: isActive ? 1.15 : 1.0,
+                      duration: const Duration(milliseconds: 250),
+                      curve: Curves.easeOutBack,
+                      child: Icon(
+                        isActive ? _filledIcons[index] : _outlinedIcons[index],
+                        size: 22.sp,
+                        color: color,
+                      ),
+                    ),
+
+                    SizedBox(height: 3.h),
+
+                    // Label with font weight transition
+                    AnimatedDefaultTextStyle(
+                      duration: const Duration(milliseconds: 200),
+                      style: TextStyle(
+                        fontFamily: 'Cairo',
+                        color: color,
+                        fontSize: 11.sp,
+                        fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
+                      ),
+                      child: Text(
+                        labels[index],
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+
+                    const Spacer(),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
       ),
     );
   }
