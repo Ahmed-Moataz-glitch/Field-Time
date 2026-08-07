@@ -69,7 +69,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       body: SafeArea(
-        child: BlocBuilder<HomeCubit, HomeState>(
+        child: BlocListener<FavoritesCubit, FavoritesState>(
+          listener: (context, favState) {
+            if (favState is FavoritesLoaded) {
+              context.read<HomeCubit>().syncFavorites(favState.favoriteIds);
+            }
+          },
+          child: BlocBuilder<HomeCubit, HomeState>(
           builder: (context, state) {
             if (state is HomeLoading) {
               return _buildLoadingState(isDark);
@@ -299,7 +305,8 @@ class _HomeScreenState extends State<HomeScreen> {
           },
         ),
       ),
-    );
+    ),
+  );
   }
 
   Widget _buildSectionHeader(

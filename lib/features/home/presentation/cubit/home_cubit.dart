@@ -165,4 +165,11 @@ class HomeCubit extends Cubit<HomeState> {
       emit(currentState.copyWith(favoriteFieldIds: favs));
     }
   }
+
+  void syncFavorites(Set<String> favoriteIds) {
+    if (state is HomeLoaded) {
+      final currentState = state as HomeLoaded;
+      emit(currentState.copyWith(favoriteFieldIds: Set<String>.from(favoriteIds)));
+    }
+  }
 }
