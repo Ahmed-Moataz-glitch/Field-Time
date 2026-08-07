@@ -29,6 +29,42 @@ class FieldTimeApp extends StatelessWidget {
   const FieldTimeApp({super.key});
 
   @override
+  State<FieldTimeApp> createState() => _FieldTimeAppState();
+}
+class _FieldTimeAppState extends State<FieldTimeApp> {
+  late final LocaleCubit _localeCubit;
+  late final AuthCubit _authCubit;
+  late final HomeCubit _homeCubit;
+  late final FieldDetailsCubit _fieldDetailsCubit;
+  late final BookingCubit _bookingCubit;
+  late final FavoritesCubit _favoritesCubit;
+  late final ProfileCubit _profileCubit;
+
+  @override
+  void initState() {
+    super.initState();
+    _localeCubit = getIt<LocaleCubit>();
+    _authCubit = getIt<AuthCubit>();
+    _homeCubit = getIt<HomeCubit>();
+    _fieldDetailsCubit = getIt<FieldDetailsCubit>();
+    _bookingCubit = getIt<BookingCubit>();
+    _favoritesCubit = getIt<FavoritesCubit>();
+    _profileCubit = getIt<ProfileCubit>();
+  }
+
+  @override
+  void dispose() {
+    _localeCubit.close();
+    _authCubit.close();
+    _homeCubit.close();
+    _fieldDetailsCubit.close();
+    _bookingCubit.close();
+    _favoritesCubit.close();
+    _profileCubit.close();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final fieldRepo = FieldRepository();
     final bookingRepo = BookingRepository();
