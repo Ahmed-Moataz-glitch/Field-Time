@@ -52,6 +52,7 @@ void main() async {
   await SupabaseService.init();
   await FirebaseService.init();
   await setupGetIt();
+  await AppRouter.initializeRouter();
 
   runApp(const FieldTimeApp());
 }
