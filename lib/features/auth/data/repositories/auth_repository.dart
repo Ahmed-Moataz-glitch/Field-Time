@@ -1,16 +1,18 @@
+import 'package:field_time/core/utils/secure_storage.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:field_time/core/errors/failures.dart';
 import 'package:field_time/features/auth/data/models/user_model.dart';
 
 class AuthRepository {
-  final SupabaseClient _supabase;
+  final SupabaseClient _supabase = Supabase.instance.client;
+  final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
 
-  AuthRepository([SupabaseClient? supabase])
-      : _supabase = supabase ?? Supabase.instance.client;
 
   /// Sign in with email and password using Supabase Auth and fetch profile
-  Future<UserModel> login({
+  Future<UserModel> loginWithEmailAndPassword({
     required String email,
     required String password,
   }) async {
@@ -24,7 +26,7 @@ class AuthRepository {
       if (user == null) {
         throw const AuthFailure('لم يتم العثور على بيانات المستخدم');
       }
-
+      await SecureStorage.saveToken(user.aud); // Save the token for session management
       final profile = await _fetchProfile(user.id);
       return UserModel.fromSupabase(user, profile);
     } on AuthException catch (e) {
@@ -34,6 +36,24 @@ class AuthRepository {
     } catch (e) {
       if (kDebugMode) print('Login Error: $e');
       throw const AuthFailure('حدث خطأ أثناء تسجيل الدخول. حاول مرة أخرى.');
+    }
+  }
+
+  Future<bool> loginWithGoogle() async {
+    try {
+      final gUser = await GoogleSignIn().signIn();
+      final gAuth = await gUser?.authentication;
+      final credential = GoogleAuthProvider.credential(
+        accessToken: gAuth?.accessToken,
+        idToken: gAuth?.idToken,
+      );
+      final userCredential = await _firebaseAuth.signInWithCredential(
+        credential,
+      );
+      await SecureStorage.saveToken(await userCredential.user?.getIdToken() ?? ''); // Save the token for session management
+      return userCredential.user != null;
+    } catch (_) {
+      return false;
     }
   }
 
@@ -75,9 +95,9 @@ class AuthRepository {
       };
 
       try {
-        await _supabase.from('users').upsert(profileMap);
+        await _supabase.from('profiles').upsert(profileMap);
       } catch (e) {
-        if (kDebugMode) print('User profile upsert warning: $e');
+        if (kDebugMode) print('Profile upsert warning: $e');
       }
 
       return UserModel.fromSupabase(user, profileMap);
@@ -91,60 +111,43 @@ class AuthRepository {
     }
   }
 
-  /// Send 6-digit OTP code to email for password reset via Supabase Auth
-  Future<void> sendPasswordResetOtp(String email) async {
+  Future<void> sendOtpForNewUser(String email) async {
     try {
-      await _supabase.auth.signInWithOtp(
-        email: email,
-        shouldCreateUser: false,
-      );
-    } on AuthException catch (e) {
-      throw AuthFailure(_mapAuthExceptionMessage(e.message));
-    } catch (_) {
-      try {
-        await _supabase.auth.resetPasswordForEmail(email);
-      } catch (e) {
-        if (kDebugMode) print('Supabase OTP Warning: $e');
-      }
+      await _supabase.auth.signInWithOtp(email: email, shouldCreateUser: true);
+    } catch (e) {
+      throw 'Error from send OTP for new user $e';
     }
   }
 
-  /// Verify 6-digit OTP code sent to user email
-  Future<void> verifyPasswordResetOtp({
-    required String email,
-    required String otp,
-  }) async {
+  Future<void> sendOtpForExistingUser(String email) async {
     try {
-      final response = await _supabase.auth.verifyOTP(
+      await _supabase.auth.signInWithOtp(email: email, shouldCreateUser: false);
+    } catch (e) {
+      throw 'Error from send OTP for existing user $e';
+    }
+  }
+
+  Future<bool> validateOtp({required String email, required String otp}) async {
+    try {
+      final result = await _supabase.auth.verifyOTP(
+        type: OtpType.email,
         email: email,
         token: otp,
-        type: OtpType.recovery,
       );
-      if (response.session == null && response.user == null) {
-        // Fallback check if OtpType.email was sent
-        await _supabase.auth.verifyOTP(
-          email: email,
-          token: otp,
-          type: OtpType.email,
-        );
-      }
-    } on AuthException catch (e) {
-      throw AuthFailure(_mapAuthExceptionMessage(e.message));
+      return result.session != null;
     } catch (e) {
-      if (otp.length != 6) {
-        throw const AuthFailure('رمز التحقق غير صحيح! يجب أن يتكون من 6 أرقام');
-      }
+      throw 'Error from verify OTP $e';
     }
   }
 
-  /// Update password after successful OTP verification
-  Future<void> updateForgottenPassword(String newPassword) async {
+  /// Request password reset via Supabase Auth
+  Future<void> resetPassword(String email) async {
     try {
-      await _supabase.auth.updateUser(UserAttributes(password: newPassword));
+      await _supabase.auth.resetPasswordForEmail(email);
     } on AuthException catch (e) {
       throw AuthFailure(_mapAuthExceptionMessage(e.message));
     } catch (e) {
-      if (kDebugMode) print('Update password error: $e');
+      throw const AuthFailure('فشل إرسال رابط إعادة تعيين كلمة المرور');
     }
   }
 
@@ -166,7 +169,7 @@ class AuthRepository {
   Future<Map<String, dynamic>?> _fetchProfile(String userId) async {
     try {
       final data = await _supabase
-          .from('users')
+          .from('profiles')
           .select()
           .eq('id', userId)
           .maybeSingle();
@@ -191,7 +194,7 @@ class AuthRepository {
         await _supabase.auth.updateUser(UserAttributes(
           data: {'full_name': fullName, 'phone': phone, 'city': city},
         ));
-        await _supabase.from('users').upsert({
+        await _supabase.from('profiles').upsert({
           'id': user.id,
           'full_name': fullName,
           'phone': phone,
@@ -229,7 +232,7 @@ class AuthRepository {
         await _supabase.auth.updateUser(UserAttributes(
           data: {'avatar_url': avatarUrl},
         ));
-        await _supabase.from('users').upsert({
+        await _supabase.from('profiles').upsert({
           'id': user.id,
           'avatar_url': avatarUrl,
         });
@@ -269,6 +272,12 @@ class AuthRepository {
     }
   }
 
+  /// Alias for loginWithEmailAndPassword
+  Future<UserModel> login({
+    required String email,
+    required String password,
+  }) => loginWithEmailAndPassword(email: email, password: password);
+
   /// Sign out current Supabase auth session
   Future<void> logout() async {
     try {
@@ -283,10 +292,12 @@ class AuthRepository {
   /// Translate Supabase English error messages to user-friendly Arabic messages
   String _mapAuthExceptionMessage(String message) {
     final lower = message.toLowerCase();
-    if (lower.contains('invalid login credentials') || lower.contains('invalid_credentials')) {
+    if (lower.contains('invalid login credentials') ||
+        lower.contains('invalid_credentials')) {
       return 'البريد الإلكتروني أو كلمة المرور غير صحيحة';
     }
-    if (lower.contains('user already registered') || lower.contains('already_exists')) {
+    if (lower.contains('user already registered') ||
+        lower.contains('already_exists')) {
       return 'هذا البريد الإلكتروني مسجل بالفعل';
     }
     if (lower.contains('password should be at least')) {

@@ -24,6 +24,9 @@ import 'package:field_time/features/notifications/data/repositories/notification
 import 'package:field_time/features/notifications/presentation/cubit/notifications_cubit.dart';
 import 'package:field_time/features/profile/presentation/cubit/profile_cubit.dart';
 
+import 'package:field_time/core/services/firebase_service.dart';
+import 'package:field_time/core/utils/get_it.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -47,6 +50,8 @@ void main() async {
   };
 
   await SupabaseService.init();
+  await FirebaseService.init();
+  await setupGetIt();
 
   runApp(const FieldTimeApp());
 }

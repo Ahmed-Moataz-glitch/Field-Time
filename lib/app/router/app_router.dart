@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:field_time/features/auth/presentation/screens/forgot_password_screen.dart';
+import 'package:field_time/features/auth/presentation/cubit/auth_cubit.dart';
+import 'package:field_time/features/auth/presentation/screens/forget_password_screen.dart';
 import 'package:field_time/features/auth/presentation/screens/login_screen.dart';
 import 'package:field_time/features/auth/presentation/screens/register_screen.dart';
+import 'package:field_time/features/auth/presentation/screens/reset_password_screen.dart';
+import 'package:field_time/features/auth/presentation/screens/successful_reset_password_screen.dart';
+import 'package:field_time/features/auth/presentation/screens/verify_code_screen.dart';
+import 'package:field_time/features/auth/presentation/screens/verify_email_screen.dart';
 import 'package:field_time/features/auth/presentation/screens/welcome_screen.dart';
 import 'package:field_time/features/booking/presentation/screens/booking_screen.dart';
 import 'package:field_time/features/booking/presentation/screens/booking_success_screen.dart';
@@ -23,6 +28,11 @@ abstract class AppRouter {
   static const String login = '/login';
   static const String register = '/register';
   static const String forgotPassword = '/forgot-password';
+  static const String forgetPassword = '/forget-password';
+  static const String verifyEmail = '/verify-email';
+  static const String verifyCode = '/verify-code';
+  static const String resetPassword = '/reset-password';
+  static const String successfulResetPassword = '/successful-reset-password';
   static const String main = '/main';
   static const String fieldDetails = '/field-details/:id';
   static const String booking = '/booking';
@@ -60,7 +70,44 @@ abstract class AppRouter {
       ),
       GoRoute(
         path: forgotPassword,
-        builder: (context, state) => const ForgotPasswordScreen(),
+        builder: (context, state) {
+          final authCubit = state.extra as AuthCubit?;
+          return ForgetPasswordScreen(authCubit: authCubit);
+        },
+      ),
+      GoRoute(
+        path: forgetPassword,
+        builder: (context, state) {
+          final authCubit = state.extra as AuthCubit?;
+          return ForgetPasswordScreen(authCubit: authCubit);
+        },
+      ),
+      GoRoute(
+        path: verifyEmail,
+        builder: (context, state) {
+          final authCubit = state.extra as AuthCubit?;
+          final email = state.uri.queryParameters['email'];
+          return VerifyEmailScreen(authCubit: authCubit, email: email);
+        },
+      ),
+      GoRoute(
+        path: verifyCode,
+        builder: (context, state) {
+          final authCubit = state.extra as AuthCubit?;
+          final email = state.uri.queryParameters['email'];
+          return VerifyCodeScreen(authCubit: authCubit, email: email);
+        },
+      ),
+      GoRoute(
+        path: resetPassword,
+        builder: (context, state) {
+          final authCubit = state.extra as AuthCubit?;
+          return ResetPasswordScreen(authCubit: authCubit);
+        },
+      ),
+      GoRoute(
+        path: successfulResetPassword,
+        builder: (context, state) => const SuccessfulResetPasswordScreen(),
       ),
       GoRoute(
         path: main,

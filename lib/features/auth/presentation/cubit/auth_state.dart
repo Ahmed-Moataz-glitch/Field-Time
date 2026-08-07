@@ -12,6 +12,32 @@ class AuthInitial extends AuthState {}
 
 class AuthLoading extends AuthState {}
 
+class SendingOtp extends AuthState {}
+
+class OtpSent extends AuthState {
+  final String message;
+
+  const OtpSent(this.message);
+}
+
+class SendingOtpError extends AuthState {
+  final String message;
+
+  const SendingOtpError(this.message);
+}
+
+class VerifyingOtp extends AuthState {}
+
+class OtpVerified extends AuthState {}
+
+class VerifyingOtpError extends AuthState {
+  final String message;
+
+  const VerifyingOtpError(this.message);
+}
+
+class LoginWithGoogleLoading extends AuthState {}
+
 class Authenticated extends AuthState {
   final UserModel user;
 
@@ -23,6 +49,16 @@ class Authenticated extends AuthState {
 
 class Unauthenticated extends AuthState {}
 
+class AuthSuccess extends AuthState {}
+
+class LoginWithGoogleSuccess extends AuthState {}
+
+class LoginWithGoogleError extends AuthState {
+  final String message;
+
+  const LoginWithGoogleError(this.message);
+}
+
 class AuthError extends AuthState {
   final String message;
 
@@ -32,23 +68,11 @@ class AuthError extends AuthState {
   List<Object?> get props => [message];
 }
 
-class PasswordResetOtpSent extends AuthState {
+class PasswordResetSent extends AuthState {
   final String email;
 
-  const PasswordResetOtpSent(this.email);
+  const PasswordResetSent(this.email);
 
   @override
   List<Object?> get props => [email];
 }
-
-class PasswordResetOtpVerified extends AuthState {
-  final String email;
-  final String otp;
-
-  const PasswordResetOtpVerified(this.email, this.otp);
-
-  @override
-  List<Object?> get props => [email, otp];
-}
-
-class PasswordResetSuccess extends AuthState {}
