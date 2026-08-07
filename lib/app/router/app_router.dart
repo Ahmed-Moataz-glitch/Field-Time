@@ -22,6 +22,7 @@ abstract class AppRouter {
   static const String welcomePath = '/';
   static const String welcomeName = 'welcome';
   static const String loginPath = '/login';
+  static const String fieldDetailsPath = '/field-details';
   static const String ownerDashboardPath = '/owner-dashboard';
   static const String registerPath = '/register';
   static const String forgetPasswordPath = '/forget-password';
@@ -30,7 +31,6 @@ abstract class AppRouter {
   static const String resetPasswordPath = '/reset-password';
   static const String successfulResetPasswordPath = '/successful-reset-password';
   static const String appSectionPath = '/app-section';
-  static const String fieldDetailsPath = '/field-details';
   static const String bookingSuccessPath = '/booking-success';
   static const String loginName = 'login';
   static const String registerName = 'register';

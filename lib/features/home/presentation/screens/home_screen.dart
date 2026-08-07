@@ -1,3 +1,4 @@
+import 'package:field_time/app/router/app_router.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -229,7 +230,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   isFavorite: isFav,
                                   onTap: () async {
                                     final cubit = context.read<HomeCubit>();
-                                    await context.push('/field-details/${field.id}');
+                                    await context.pushNamed(AppRouter.fieldDetailsName, queryParameters: {'fieldId': field.id});
                                     cubit.loadHomeData();
                                   },
                                   onFavoriteToggle: () {
@@ -259,7 +260,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             return FieldCard(
                               field: field,
                               isFavorite: isFav,
-                              onTap: () => context.push('/field-details/${field.id}'),
+                              onTap: () => context.pushNamed(AppRouter.fieldDetailsName, queryParameters: {'fieldId': field.id}),
                               onFavoriteToggle: () {
                                 _toggleFavorite(context, field.id);
                               },
@@ -286,7 +287,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               return FieldCard(
                                 field: field,
                                 isFavorite: isFav,
-                                onTap: () => context.push('/field-details/${field.id}'),
+                                onTap: () => context.pushNamed(AppRouter.fieldDetailsName, queryParameters: {'fieldId': field.id}),
                                 onFavoriteToggle: () {
                                   _toggleFavorite(context, field.id);
                                 },
