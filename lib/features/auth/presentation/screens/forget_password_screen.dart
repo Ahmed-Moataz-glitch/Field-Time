@@ -21,17 +21,19 @@ class ForgetPasswordScreen extends StatefulWidget {
 
 class _ForgetPasswordScreenState extends State<ForgetPasswordScreen> {
   AuthCubit get cubit => widget.authCubit ?? context.read<AuthCubit>();
-  final formKey = GlobalKey<FormState>();
+  late final GlobalKey<FormState> formKey;
   late final TextEditingController emailController;
 
   @override
   void initState() {
     super.initState();
+    formKey = GlobalKey<FormState>();
     emailController = TextEditingController();
   }
 
   @override
   void dispose() {
+    formKey.currentState?.dispose();
     emailController.dispose();
     super.dispose();
   }

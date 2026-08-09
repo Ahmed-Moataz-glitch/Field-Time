@@ -67,8 +67,6 @@ class _VerifyCodeScreenState extends State<VerifyCodeScreen> {
               context,
               title: 'جار إعادة إرسال رمز التحقق...',
             );
-          } else {
-            Navigator.of(context, rootNavigator: true).pop();
           }
           if (state is OtpVerified) {
             context.pushNamed(
@@ -99,7 +97,7 @@ class _VerifyCodeScreenState extends State<VerifyCodeScreen> {
           child: Column(
             children: [
               Text(
-                'يرجى إدخال عنوان البريد الإلكتروني الذي استخدمته عند إنشاء حسابك',
+                'يرجى إدخال رمز التحقق المكون من 6 أرقام المرسل إلى بريدك الإلكتروني',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 18.sp,
@@ -133,9 +131,8 @@ class _VerifyCodeScreenState extends State<VerifyCodeScreen> {
               VerifyCodeWidget(pinController: otpController),
               SizedBox(height: size.height * 0.04),
               PrimaryButton(
-                title: '',
+                title: 'تحقق',
                 onPressed: () async {
-                  // debugPrint('Verification code: ${verificationController.text}');
                   await cubit.validateOtp(
                     email: widget.email ?? '',
                     otp: otpController.text,

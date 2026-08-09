@@ -134,6 +134,19 @@ class AuthCubit extends Cubit<AuthState> {
     }
   }
 
+  /// Confirm password reset with new password
+  Future<void> confirmPasswordReset(String newPassword) async {
+    emit(AuthLoading());
+    try {
+      await _repository.confirmPasswordReset(newPassword: newPassword);
+      emit(AuthSuccess());
+    } on Failure catch (failure) {
+      emit(AuthError(failure.message));
+    } catch (e) {
+      emit(AuthError(e.toString()));
+    }
+  }
+
   /// Sign out
   Future<void> logout() async {
     try {

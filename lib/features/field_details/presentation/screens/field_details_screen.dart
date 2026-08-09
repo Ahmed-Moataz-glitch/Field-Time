@@ -1,4 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:field_time/app/router/app_router.dart';
+import 'package:field_time/core/utils/url_launcher_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -10,9 +12,9 @@ import 'package:field_time/core/widgets/primary_button.dart';
 import 'package:field_time/core/widgets/rating_badge.dart';
 import 'package:field_time/features/field_details/data/models/review_model.dart';
 import 'package:field_time/features/field_details/presentation/cubit/field_details_cubit.dart';
+import 'package:field_time/core/utils/get_it.dart';
 import 'package:field_time/features/field_details/presentation/cubit/field_details_state.dart';
 import 'package:field_time/features/home/data/models/field_model.dart';
-import 'package:field_time/features/home/data/repositories/field_repository.dart';
 import 'package:field_time/features/reviews/presentation/widgets/add_edit_review_bottom_sheet.dart';
 import 'package:field_time/features/favorites/presentation/cubit/favorites_cubit.dart';
 import 'package:field_time/features/booking/data/repositories/booking_repository.dart';
@@ -20,15 +22,13 @@ import 'package:field_time/features/booking/data/repositories/booking_repository
 class FieldDetailsScreen extends StatelessWidget {
   final String fieldId;
 
-  const FieldDetailsScreen({
-    super.key,
-    required this.fieldId,
-  });
+  const FieldDetailsScreen({super.key, required this.fieldId});
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => FieldDetailsCubit(FieldRepository())..loadFieldDetails(fieldId),
+      create: (context) =>
+          getIt<FieldDetailsCubit>()..loadFieldDetails(fieldId),
       child: _FieldDetailsView(fieldId: fieldId),
     );
   }
@@ -43,6 +43,8 @@ class _FieldDetailsView extends StatefulWidget {
 }
 
 class _FieldDetailsViewState extends State<_FieldDetailsView> {
+  late final FieldDetailsCubit _fieldDetailsCubit;
+  late final FavoritesCubit _favoritesCubit;
   late PageController _pageController;
   Set<String> _bookedSlots = {};
 
@@ -60,6 +62,8 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
   @override
   void initState() {
     super.initState();
+    _fieldDetailsCubit = context.read<FieldDetailsCubit>();
+    _favoritesCubit = context.read<FavoritesCubit>();
     _pageController = PageController();
     _fetchBookedSlots(DateFormat('yyyy-MM-dd').format(DateTime.now()));
   }
@@ -88,7 +92,15 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
   }
 
   String _formatDayName(DateTime date) {
-    final arabicDays = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+    final arabicDays = [
+      'الأحد',
+      'الإثنين',
+      'الثلاثاء',
+      'الأربعاء',
+      'الخميس',
+      'الجمعة',
+      'السبت',
+    ];
     return arabicDays[date.weekday % 7];
   }
 
@@ -105,13 +117,14 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
       'سبتمبر',
       'أكتوبر',
       'نوفمبر',
-      'ديسمبر'
+      'ديسمبر',
     ];
     return arabicMonths[date.month - 1];
   }
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
@@ -123,7 +136,9 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
             );
           } else if (state is FieldDetailsLoaded) {
             final field = state.field;
-            final imagesList = field.images.isNotEmpty ? field.images : [field.mainImage];
+            final imagesList = field.images.isNotEmpty
+                ? field.images
+                : [field.mainImage];
             final availableDates = _getAvailableDates();
 
             return Stack(
@@ -134,7 +149,13 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // 1. Hero Image Slider with Gallery Indicators
-                      _buildImageSlider(context, field, imagesList, state),
+                      _buildImageSlider(
+                        context,
+                        size,
+                        field,
+                        imagesList,
+                        state,
+                      ),
 
                       SizedBox(height: 16.h),
 
@@ -150,6 +171,9 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
 
                             // Address & Distance Row
                             _buildAddressRow(field, isDark),
+
+                            // Coupon Ad Banner (if field has active coupon promotion)
+                            _buildCouponAdBanner(context, field, isDark),
 
                             SizedBox(height: 16.h),
 
@@ -175,14 +199,19 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
 
                             // 6. Location & Map Preview Card
                             SizedBox(height: 16.h),
-                            _buildMapCard(context, field, isDark),
+                            _buildMapCard(context, size, field, isDark),
 
                             SizedBox(height: 24.h),
                             const Divider(),
 
                             // 7. Interactive Date Picker Strip
                             SizedBox(height: 16.h),
-                            _buildDatePickerSection(context, state, availableDates, isDark),
+                            _buildDatePickerSection(
+                              context,
+                              state,
+                              availableDates,
+                              isDark,
+                            ),
 
                             SizedBox(height: 24.h),
 
@@ -202,7 +231,12 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
                             // 10. Related Fields Carousel
                             if (state.relatedFields.isNotEmpty) ...[
                               SizedBox(height: 16.h),
-                              _buildRelatedFieldsSection(context, state.relatedFields, isDark),
+                              _buildRelatedFieldsSection(
+                                context,
+                                size,
+                                state.relatedFields,
+                                isDark,
+                              ),
                             ],
                           ],
                         ),
@@ -220,12 +254,20 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.error_outline, size: 48.sp, color: AppColors.error),
+                  Icon(
+                    Icons.error_outline,
+                    size: 48.sp,
+                    color: AppColors.error,
+                  ),
                   SizedBox(height: 12.h),
-                  Text(state.message, style: AppTypography.body(color: AppColors.error)),
+                  Text(
+                    state.message,
+                    style: AppTypography.body(color: AppColors.error),
+                  ),
                   SizedBox(height: 16.h),
                   ElevatedButton(
-                    onPressed: () => context.read<FieldDetailsCubit>().loadFieldDetails(widget.fieldId),
+                    onPressed: () async => await _fieldDetailsCubit
+                        .loadFieldDetails(widget.fieldId),
                     child: const Text('إعادة المحاولة'),
                   ),
                 ],
@@ -241,6 +283,7 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
   // Widget 1: Image Slider
   Widget _buildImageSlider(
     BuildContext context,
+    Size size,
     FieldModel field,
     List<String> images,
     FieldDetailsLoaded state,
@@ -253,12 +296,12 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
             controller: _pageController,
             itemCount: images.length,
             onPageChanged: (index) {
-              context.read<FieldDetailsCubit>().changeImageIndex(index);
+              _fieldDetailsCubit.changeImageIndex(index);
             },
             itemBuilder: (context, index) {
               return CachedNetworkImage(
                 imageUrl: images[index],
-                width: double.infinity,
+                width: size.width,
                 height: 300.h,
                 fit: BoxFit.cover,
                 placeholder: (context, url) => Container(
@@ -269,7 +312,11 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
                 ),
                 errorWidget: (context, url, error) => Container(
                   color: Colors.grey[800],
-                  child: const Icon(Icons.sports_soccer, size: 60, color: Colors.white54),
+                  child: Icon(
+                    Icons.sports_soccer,
+                    size: 60.sp,
+                    color: Colors.white54,
+                  ),
                 ),
               );
             },
@@ -288,8 +335,8 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  Colors.black.withValues(alpha: 0.7),
-                  Colors.transparent,
+                  AppColors.surfaceDark.withValues(alpha: 0.7),
+                  AppColors.transparent,
                 ],
               ),
             ),
@@ -305,29 +352,37 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               CircleAvatar(
-                backgroundColor: Colors.black.withValues(alpha: 0.5),
+                backgroundColor: AppColors.surfaceDark.withValues(alpha: 0.5),
                 radius: 20.r,
                 child: IconButton(
-                  icon: Icon(Icons.arrow_back, color: Colors.white, size: 20.sp),
+                  icon: Icon(
+                    Icons.arrow_back,
+                    color: AppColors.backgroundLight,
+                    size: 20.sp,
+                  ),
                   onPressed: () => context.pop(),
                 ),
               ),
               Row(
                 children: [
                   CircleAvatar(
-                    backgroundColor: Colors.black.withValues(alpha: 0.5),
+                    backgroundColor: AppColors.surfaceDark.withValues(alpha: 0.5),
                     radius: 20.r,
                     child: IconButton(
                       icon: Icon(
-                        state.isFavorite ? Icons.favorite : Icons.favorite_border,
-                        color: state.isFavorite ? Colors.red : Colors.white,
+                        state.isFavorite
+                            ? Icons.favorite
+                            : Icons.favorite_border,
+                        color: state.isFavorite
+                            ? AppColors.error
+                            : AppColors.backgroundLight,
                         size: 20.sp,
                       ),
                       onPressed: () async {
-                        await context.read<FieldDetailsCubit>().toggleFavorite();
+                        await _fieldDetailsCubit.toggleFavorite();
                         if (context.mounted) {
                           try {
-                            context.read<FavoritesCubit>().loadFavorites(isRefresh: true);
+                            await _favoritesCubit.loadFavorites(isRefresh: true);
                           } catch (_) {}
                         }
                       },
@@ -344,42 +399,49 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
           bottom: 16.h,
           left: 16.w,
           right: 16.w,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              // Page Dots Indicator
-              Row(
-                children: List.generate(
-                  images.length,
-                  (index) => AnimatedContainer(
-                    duration: const Duration(milliseconds: 300),
-                    margin: EdgeInsets.symmetric(horizontal: 3.w),
-                    width: state.currentImageIndex == index ? 20.w : 7.w,
-                    height: 7.h,
-                    decoration: BoxDecoration(
-                      color: state.currentImageIndex == index ? AppColors.primary : Colors.white.withValues(alpha: 0.6),
-                      borderRadius: BorderRadius.circular(4.r),
+          child: () {
+            final currentIndex = images.isEmpty
+                ? 0
+                : state.currentImageIndex.clamp(0, images.length - 1);
+            return Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                // Page Dots Indicator
+                Row(
+                  children: List.generate(
+                    images.length,
+                    (index) => AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      margin: EdgeInsets.symmetric(horizontal: 3.w),
+                      width: currentIndex == index ? 20.w : 7.w,
+                      height: 7.h,
+                      decoration: BoxDecoration(
+                        color: currentIndex == index
+                            ? AppColors.primary
+                            : AppColors.backgroundLight.withValues(alpha: 0.6),
+                        borderRadius: BorderRadius.circular(4.r),
+                      ),
                     ),
                   ),
                 ),
-              ),
 
-              // Image Count Badge
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.65),
-                  borderRadius: BorderRadius.circular(12.r),
-                ),
-                child: Text(
-                  '${state.currentImageIndex + 1} / ${images.length}',
-                  style: AppTypography.small(color: Colors.white).copyWith(
-                    fontWeight: FontWeight.bold,
+                // Image Count Badge
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceDark.withValues(alpha: 0.65),
+                    borderRadius: BorderRadius.circular(12.r),
+                  ),
+                  child: Text(
+                    '${currentIndex + 1} / ${images.length}',
+                    style: AppTypography.small(
+                      color: AppColors.backgroundLight,
+                    ).copyWith(fontWeight: FontWeight.bold),
                   ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            );
+          }(),
         ),
       ],
     );
@@ -397,7 +459,9 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
               child: Text(
                 field.name,
                 style: AppTypography.heading2(
-                  color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                  color: isDark
+                      ? AppColors.textPrimaryDark
+                      : AppColors.textPrimaryLight,
                 ).copyWith(fontWeight: FontWeight.bold),
               ),
             ),
@@ -411,7 +475,11 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
           children: [
             _badgeChip(field.fieldType, AppColors.primary, isDark),
             _badgeChip(field.grassType, Colors.orange, isDark),
-            _badgeChip(field.isIndoor ? 'صالة مغطاة' : 'ملعب مكشوف', Colors.blue, isDark),
+            _badgeChip(
+              field.isIndoor ? 'صالة مغطاة' : 'ملعب مكشوف',
+              Colors.blue,
+              isDark,
+            ),
             if (field.isAvailableToday)
               _badgeChip('متاح اليوم', AppColors.success, isDark),
           ],
@@ -430,7 +498,9 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
       ),
       child: Text(
         label,
-        style: AppTypography.small(color: color).copyWith(fontWeight: FontWeight.bold),
+        style: AppTypography.small(
+          color: color,
+        ).copyWith(fontWeight: FontWeight.bold),
       ),
     );
   }
@@ -445,7 +515,9 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
           child: Text(
             field.address,
             style: AppTypography.body(
-              color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+              color: isDark
+                  ? AppColors.textSecondaryDark
+                  : AppColors.textSecondaryLight,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -460,7 +532,9 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
           child: Text(
             field.distance,
             style: AppTypography.caption(
-              color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+              color: isDark
+                  ? AppColors.textPrimaryDark
+                  : AppColors.textPrimaryLight,
             ).copyWith(fontWeight: FontWeight.bold),
           ),
         ),
@@ -468,8 +542,147 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
     );
   }
 
+  // Widget: Coupon Ad Banner
+  Widget _buildCouponAdBanner(BuildContext context, FieldModel field, bool isDark) {
+    if (field.couponCode == null || field.couponCode!.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final couponCode = field.couponCode!;
+    final couponTag = field.couponTag ?? 'عرض خاص على هذا الملعب';
+
+    return Container(
+      margin: EdgeInsets.only(top: 14.h),
+      padding: EdgeInsets.all(14.w),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [
+            Color(0xFF1E293B),
+            Color(0xFF0F172A),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16.r),
+        border: Border.all(color: Colors.amber.shade600, width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.amber.withValues(alpha: 0.15),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: EdgeInsets.all(8.w),
+                decoration: BoxDecoration(
+                  color: Colors.amber.withValues(alpha: 0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.confirmation_number_outlined, color: Colors.amber.shade400, size: 20.sp),
+              ),
+              SizedBox(width: 10.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          'كوبون إعلاني حصري 🔥',
+                          style: AppTypography.small(color: Colors.amber.shade400).copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 2.h),
+                    Text(
+                      couponTag,
+                      style: AppTypography.body(color: AppColors.backgroundLight).copyWith(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13.sp,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 12.h),
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.4),
+              borderRadius: BorderRadius.circular(12.r),
+              border: Border.all(color: Colors.white24, width: 0.8),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Row(
+                    children: [
+                      Icon(Icons.local_offer_outlined, color: Colors.amber.shade300, size: 18.sp),
+                      SizedBox(width: 6.w),
+                      Text(
+                        couponCode,
+                        style: AppTypography.heading3(color: Colors.amber.shade300).copyWith(
+                          letterSpacing: 1.5,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16.sp,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      context.pushNamed(
+                        AppRouter.bookingName,
+                        queryParameters: {
+                          'fieldId': field.id,
+                          'fieldName': field.name,
+                          'fieldAddress': field.address,
+                          'fieldImage': field.mainImage,
+                          'price': field.pricePerHour.toString(),
+                          'couponCode': couponCode,
+                        },
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.r)),
+                      elevation: 0,
+                    ),
+                    icon: Icon(Icons.flash_on_outlined, color: AppColors.backgroundLight, size: 14.sp),
+                    label: Text(
+                      'احجز بكود الخصم',
+                      style: AppTypography.small(color: AppColors.backgroundLight).copyWith(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   // Widget 3: Quick Action Bar
-  Widget _buildQuickActionsRow(BuildContext context, FieldModel field, bool isDark) {
+  Widget _buildQuickActionsRow(
+    BuildContext context,
+    FieldModel field,
+    bool isDark,
+  ) {
     return Row(
       children: [
         Expanded(
@@ -480,12 +693,7 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
             isDark: isDark,
             onTap: () {
               final phoneNum = field.phone ?? '01012345678';
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('رقم الهاتف: $phoneNum'),
-                  backgroundColor: AppColors.primary,
-                ),
-              );
+              UrlLauncherUtils.makePhoneCall(context, phoneNum);
             },
           ),
         ),
@@ -497,11 +705,9 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
             color: Colors.blue,
             isDark: isDark,
             onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('موقع الملعب: ${field.address}'),
-                  backgroundColor: Colors.blue,
-                ),
+              UrlLauncherUtils.openGoogleMaps(
+                context,
+                '${field.name} ${field.address} ${field.city}',
               );
             },
           ),
@@ -550,7 +756,9 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
                 label,
                 maxLines: 1,
                 overflow: TextOverflow.clip,
-                style: AppTypography.caption(color: color).copyWith(fontWeight: FontWeight.bold),
+                style: AppTypography.caption(
+                  color: color,
+                ).copyWith(fontWeight: FontWeight.bold),
               ),
             ),
           ],
@@ -577,7 +785,9 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
         child: Icon(
           icon,
           size: 20.sp,
-          color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+          color: isDark
+              ? AppColors.textPrimaryDark
+              : AppColors.textPrimaryLight,
         ),
       ),
     );
@@ -598,28 +808,33 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
         Text(
           'وصف الملعب',
           style: AppTypography.title(
-            color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+            color: isDark
+                ? AppColors.textPrimaryDark
+                : AppColors.textPrimaryLight,
           ).copyWith(fontWeight: FontWeight.bold),
         ),
         SizedBox(height: 8.h),
         Text(
           description,
           style: AppTypography.body(
-            color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+            color: isDark
+                ? AppColors.textSecondaryDark
+                : AppColors.textSecondaryLight,
           ),
           maxLines: isExpanded ? 100 : 3,
           overflow: isExpanded ? TextOverflow.visible : TextOverflow.ellipsis,
         ),
         if (description.length > 100)
           GestureDetector(
-            onTap: () => context.read<FieldDetailsCubit>().toggleDescriptionExpand(),
+            onTap: () =>
+                _fieldDetailsCubit.toggleDescriptionExpand(),
             child: Padding(
               padding: EdgeInsets.only(top: 6.h),
               child: Text(
                 isExpanded ? 'عرض أقل' : 'اقرأ المزيد',
-                style: AppTypography.caption(color: AppColors.primary).copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+                style: AppTypography.caption(
+                  color: AppColors.primary,
+                ).copyWith(fontWeight: FontWeight.bold),
               ),
             ),
           ),
@@ -652,7 +867,9 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
         Text(
           'المرافق والخدمات',
           style: AppTypography.title(
-            color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+            color: isDark
+                ? AppColors.textPrimaryDark
+                : AppColors.textPrimaryLight,
           ).copyWith(fontWeight: FontWeight.bold),
         ),
         SizedBox(height: 14.h),
@@ -687,7 +904,9 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
                   Text(
                     name,
                     style: AppTypography.small(
-                      color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                      color: isDark
+                          ? AppColors.textPrimaryDark
+                          : AppColors.textPrimaryLight,
                     ),
                     textAlign: TextAlign.center,
                     maxLines: 1,
@@ -703,7 +922,8 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
   }
 
   // Widget 6: Map Preview Card
-  Widget _buildMapCard(BuildContext context, FieldModel field, bool isDark) {
+  Widget _buildMapCard(BuildContext context, Size size, FieldModel field, bool isDark) {
+    final mapQuery = '${field.name} ${field.address} ${field.city}';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -713,66 +933,82 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
             Text(
               'الموقع الجغرافي',
               style: AppTypography.title(
-                color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                color: isDark
+                    ? AppColors.textPrimaryDark
+                    : AppColors.textPrimaryLight,
               ).copyWith(fontWeight: FontWeight.bold),
             ),
             Text(
               field.city,
-              style: AppTypography.caption(color: AppColors.primary).copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              style: AppTypography.caption(
+                color: AppColors.primary,
+              ).copyWith(fontWeight: FontWeight.bold),
             ),
           ],
         ),
         SizedBox(height: 12.h),
-        Container(
-          height: 150.h,
-          width: double.infinity,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16.r),
-            color: isDark ? AppColors.cardDark : AppColors.greyLight,
-            image: const DecorationImage(
-              image: NetworkImage('https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&q=80&w=800'),
-              fit: BoxFit.cover,
-            ),
-          ),
+        InkWell(
+          onTap: () => UrlLauncherUtils.openGoogleMaps(context, mapQuery),
+          borderRadius: BorderRadius.circular(16.r),
           child: Container(
+            height: 150.h,
+            width: size.width,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16.r),
-              color: Colors.black.withValues(alpha: 0.4),
+              color: isDark ? AppColors.cardDark : AppColors.greyLight,
+              image: const DecorationImage(
+                image: NetworkImage(
+                  'https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&q=80&w=800',
+                ),
+                fit: BoxFit.cover,
+              ),
             ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.location_on, size: 36.sp, color: AppColors.primary),
-                SizedBox(height: 6.h),
-                Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16.w),
-                  child: Text(
-                    field.address,
-                    style: AppTypography.caption(color: Colors.white).copyWith(
-                      fontWeight: FontWeight.bold,
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16.r),
+                color: Colors.black.withValues(alpha: 0.4),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.location_on, size: 36.sp, color: AppColors.primary),
+                  SizedBox(height: 6.h),
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16.w),
+                    child: Text(
+                      field.address,
+                      style: AppTypography.caption(
+                        color: AppColors.backgroundLight,
+                      ).copyWith(fontWeight: FontWeight.bold),
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
                     ),
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
                   ),
-                ),
-                SizedBox(height: 10.h),
-                ElevatedButton.icon(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('جارِ فتح خرائط جوجل: ${field.address}')),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 6.h),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
+                  SizedBox(height: 10.h),
+                  ElevatedButton.icon(
+                    onPressed: () => UrlLauncherUtils.openGoogleMaps(context, mapQuery),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 16.w,
+                        vertical: 6.h,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20.r),
+                      ),
+                    ),
+                    icon: Icon(
+                      Icons.directions,
+                      size: 16.sp,
+                      color: AppColors.backgroundLight,
+                    ),
+                    label: Text(
+                      'الاتجاهات في الخريطة',
+                      style: AppTypography.small(color: AppColors.backgroundLight),
+                    ),
                   ),
-                  icon: Icon(Icons.directions, size: 16.sp, color: Colors.white),
-                  label: Text('الاتجاهات في الخريطة', style: AppTypography.small(color: Colors.white)),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -795,7 +1031,9 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
         Text(
           'اختر تاريخ الحجز',
           style: AppTypography.title(
-            color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+            color: isDark
+                ? AppColors.textPrimaryDark
+                : AppColors.textPrimaryLight,
           ).copyWith(fontWeight: FontWeight.bold),
         ),
         SizedBox(height: 12.h),
@@ -815,7 +1053,7 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
 
               return GestureDetector(
                 onTap: () {
-                  context.read<FieldDetailsCubit>().selectDate(formattedKey);
+                  _fieldDetailsCubit.selectDate(formattedKey);
                   _fetchBookedSlots(formattedKey);
                 },
                 child: AnimatedContainer(
@@ -836,7 +1074,7 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
                               color: AppColors.primary.withValues(alpha: 0.3),
                               blurRadius: 8,
                               offset: const Offset(0, 4),
-                            )
+                            ),
                           ]
                         : null,
                   ),
@@ -847,8 +1085,10 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
                         dayName,
                         style: AppTypography.small(
                           color: isSelected
-                              ? Colors.white
-                              : (isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight),
+                              ? AppColors.backgroundLight
+                              : (isDark
+                                    ? AppColors.textSecondaryDark
+                                    : AppColors.textSecondaryLight),
                         ),
                       ),
                       SizedBox(height: 2.h),
@@ -856,16 +1096,20 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
                         dayNum,
                         style: AppTypography.body(
                           color: isSelected
-                              ? Colors.white
-                              : (isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight),
+                              ? AppColors.backgroundLight
+                              : (isDark
+                                    ? AppColors.textPrimaryDark
+                                    : AppColors.textPrimaryLight),
                         ).copyWith(fontWeight: FontWeight.bold),
                       ),
                       Text(
                         monthName,
                         style: AppTypography.small(
                           color: isSelected
-                              ? Colors.white.withValues(alpha: 0.9)
-                              : (isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight),
+                              ? AppColors.backgroundLight.withValues(alpha: 0.9)
+                              : (isDark
+                                    ? AppColors.textSecondaryDark
+                                    : AppColors.textSecondaryLight),
                         ).copyWith(fontSize: 10.sp),
                       ),
                     ],
@@ -894,7 +1138,9 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
             Text(
               'المواعيد المتاحة',
               style: AppTypography.title(
-                color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                color: isDark
+                    ? AppColors.textPrimaryDark
+                    : AppColors.textPrimaryLight,
               ).copyWith(fontWeight: FontWeight.bold),
             ),
             Row(
@@ -926,20 +1172,26 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
             Color textColor;
 
             if (isBooked) {
-              bgColor = isDark ? Colors.red.withValues(alpha: 0.2) : Colors.red.withValues(alpha: 0.1);
+              bgColor = isDark
+                  ? AppColors.error.withValues(alpha: 0.2)
+                  : AppColors.error.withValues(alpha: 0.1);
               textColor = AppColors.error;
             } else if (isSelected) {
               bgColor = AppColors.primary;
-              textColor = Colors.white;
+              textColor = AppColors.backgroundLight;
             } else {
               bgColor = isDark ? AppColors.cardDark : AppColors.greyLight;
-              textColor = isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
+              textColor = isDark
+                  ? AppColors.textPrimaryDark
+                  : AppColors.textPrimaryLight;
             }
 
             return GestureDetector(
               onTap: isBooked
                   ? null
-                  : () => context.read<FieldDetailsCubit>().selectTimeSlot(timeStr),
+                  : () => _fieldDetailsCubit.selectTimeSlot(
+                      timeStr,
+                    ),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 150),
                 decoration: BoxDecoration(
@@ -947,7 +1199,11 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
                   borderRadius: BorderRadius.circular(12.r),
                   border: isSelected
                       ? Border.all(color: AppColors.primaryDark, width: 2)
-                      : (isBooked ? Border.all(color: AppColors.error.withValues(alpha: 0.3)) : null),
+                      : (isBooked
+                            ? Border.all(
+                                color: AppColors.error.withValues(alpha: 0.3),
+                              )
+                            : null),
                 ),
                 alignment: Alignment.center,
                 child: Text(
@@ -983,7 +1239,11 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
   }
 
   // Widget 9: Reviews Section
-  Widget _buildReviewsSection(FieldModel field, List<ReviewModel> reviews, bool isDark) {
+  Widget _buildReviewsSection(
+    FieldModel field,
+    List<ReviewModel> reviews,
+    bool isDark,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -995,7 +1255,9 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
                 Text(
                   'التقييمات والآراء',
                   style: AppTypography.title(
-                    color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                    color: isDark
+                        ? AppColors.textPrimaryDark
+                        : AppColors.textPrimaryLight,
                   ).copyWith(fontWeight: FontWeight.bold),
                 ),
                 SizedBox(width: 8.w),
@@ -1007,9 +1269,9 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
                   ),
                   child: Text(
                     '${reviews.length}',
-                    style: AppTypography.small(color: AppColors.primary).copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: AppTypography.small(
+                      color: AppColors.primary,
+                    ).copyWith(fontWeight: FontWeight.bold),
                   ),
                 ),
               ],
@@ -1025,13 +1287,17 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.rate_review_outlined, size: 14.sp, color: Colors.white),
+                    Icon(
+                      Icons.rate_review_outlined,
+                      size: 14.sp,
+                      color: Colors.white,
+                    ),
                     SizedBox(width: 4.w),
                     Text(
                       'أضف تقييمك',
-                      style: AppTypography.small(color: Colors.white).copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: AppTypography.small(
+                        color: Colors.white,
+                      ).copyWith(fontWeight: FontWeight.bold),
                     ),
                   ],
                 ),
@@ -1054,16 +1320,18 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
                 children: [
                   Text(
                     field.rating.toStringAsFixed(1),
-                    style: AppTypography.heading1(color: AppColors.primary).copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: AppTypography.heading1(
+                      color: AppColors.primary,
+                    ).copyWith(fontWeight: FontWeight.bold),
                   ),
                   Row(
                     children: List.generate(
                       5,
                       (index) => Icon(
                         Icons.star,
-                        color: index < field.rating.floor() ? AppColors.accent : Colors.grey,
+                        color: index < field.rating.floor()
+                            ? AppColors.accent
+                            : Colors.grey,
                         size: 14.sp,
                       ),
                     ),
@@ -1072,7 +1340,9 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
                   Text(
                     'من 5 نقاط',
                     style: AppTypography.small(
-                      color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                      color: isDark
+                          ? AppColors.textSecondaryDark
+                          : AppColors.textSecondaryLight,
                     ),
                   ),
                 ],
@@ -1103,7 +1373,9 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
               child: Text(
                 'لا توجد تقييمات حتى الآن. كن أول من يقيّم هذا الملعب!',
                 style: AppTypography.body(
-                  color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                  color: isDark
+                      ? AppColors.textSecondaryDark
+                      : AppColors.textSecondaryLight,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -1123,7 +1395,9 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
                   color: isDark ? AppColors.cardDark : AppColors.cardLight,
                   borderRadius: BorderRadius.circular(14.r),
                   border: Border.all(
-                    color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05),
+                    color: isDark
+                        ? Colors.white10
+                        : AppColors.surfaceDark.withValues(alpha: 0.05),
                   ),
                 ),
                 child: Column(
@@ -1133,12 +1407,20 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
                       children: [
                         CircleAvatar(
                           radius: 18.r,
-                          backgroundImage: rev.userAvatar != null ? NetworkImage(rev.userAvatar!) : null,
-                          backgroundColor: AppColors.primary.withValues(alpha: 0.2),
+                          backgroundImage: rev.userAvatar != null
+                              ? NetworkImage(rev.userAvatar!)
+                              : null,
+                          backgroundColor: AppColors.primary.withValues(
+                            alpha: 0.2,
+                          ),
                           child: rev.userAvatar == null
                               ? Text(
-                                  rev.userName.isNotEmpty ? rev.userName[0] : 'م',
-                                  style: AppTypography.body(color: AppColors.primary).copyWith(fontWeight: FontWeight.bold),
+                                  rev.userName.isNotEmpty
+                                      ? rev.userName[0]
+                                      : 'م',
+                                  style: AppTypography.body(
+                                    color: AppColors.primary,
+                                  ).copyWith(fontWeight: FontWeight.bold),
                                 )
                               : null,
                         ),
@@ -1150,13 +1432,17 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
                               Text(
                                 rev.userName,
                                 style: AppTypography.body(
-                                  color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                                  color: isDark
+                                      ? AppColors.textPrimaryDark
+                                      : AppColors.textPrimaryLight,
                                 ).copyWith(fontWeight: FontWeight.bold),
                               ),
                               Text(
                                 rev.createdAt,
                                 style: AppTypography.small(
-                                  color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                                  color: isDark
+                                      ? AppColors.textSecondaryDark
+                                      : AppColors.textSecondaryLight,
                                 ),
                               ),
                             ],
@@ -1167,7 +1453,9 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
                           icon: Icon(
                             Icons.more_vert_rounded,
                             size: 18.sp,
-                            color: isDark ? AppColors.textSecondaryDark : AppColors.iconGrey,
+                            color: isDark
+                                ? AppColors.textSecondaryDark
+                                : AppColors.iconGrey,
                           ),
                           onSelected: (val) {
                             if (val == 'edit') {
@@ -1181,7 +1469,11 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
                               value: 'edit',
                               child: Row(
                                 children: [
-                                  Icon(Icons.edit_outlined, size: 16.sp, color: AppColors.primary),
+                                  Icon(
+                                    Icons.edit_outlined,
+                                    size: 16.sp,
+                                    color: AppColors.primary,
+                                  ),
                                   SizedBox(width: 8.w),
                                   const Text('تعديل التقييم'),
                                 ],
@@ -1191,9 +1483,16 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
                               value: 'delete',
                               child: Row(
                                 children: [
-                                  Icon(Icons.delete_outline, size: 16.sp, color: AppColors.error),
+                                  Icon(
+                                    Icons.delete_outline,
+                                    size: 16.sp,
+                                    color: AppColors.error,
+                                  ),
                                   SizedBox(width: 8.w),
-                                  const Text('حذف التقييم', style: TextStyle(color: AppColors.error)),
+                                  const Text(
+                                    'حذف التقييم',
+                                    style: TextStyle(color: AppColors.error),
+                                  ),
                                 ],
                               ),
                             ),
@@ -1205,7 +1504,9 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
                     Text(
                       rev.comment,
                       style: AppTypography.body(
-                        color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                        color: isDark
+                            ? AppColors.textSecondaryDark
+                            : AppColors.textSecondaryLight,
                       ),
                     ),
                   ],
@@ -1217,13 +1518,18 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
     );
   }
 
-  void _openAddEditReviewSheet(BuildContext context, FieldModel field, [ReviewModel? existingReview]) {
-    final cubit = context.read<FieldDetailsCubit>();
+  void _openAddEditReviewSheet(
+    BuildContext context,
+    FieldModel field, [
+    ReviewModel? existingReview,
+  ]) {
     final messenger = ScaffoldMessenger.of(context);
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Theme.of(context).brightness == Brightness.dark ? AppColors.cardDark : Colors.white,
+      backgroundColor: Theme.of(context).brightness == Brightness.dark
+          ? AppColors.cardDark
+          : AppColors.backgroundLight,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
       ),
@@ -1234,22 +1540,23 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
           onSubmit: (rating, comment) async {
             bool success;
             if (existingReview != null) {
-              success = await cubit.editReview(
+              success = await _fieldDetailsCubit.editReview(
                 reviewId: existingReview.id,
                 rating: rating,
                 comment: comment,
               );
             } else {
-              success = await cubit.addReview(
-                rating: rating,
-                comment: comment,
-              );
+              success = await _fieldDetailsCubit.addReview(rating: rating, comment: comment);
             }
 
             if (mounted && success) {
               messenger.showSnackBar(
                 SnackBar(
-                  content: Text(existingReview != null ? 'تم تعديل تقييمك بنجاح!' : 'تم إضافة تقييمك بنجاح!'),
+                  content: Text(
+                    existingReview != null
+                        ? 'تم تعديل تقييمك بنجاح!'
+                        : 'تم إضافة تقييمك بنجاح!',
+                  ),
                   backgroundColor: AppColors.primary,
                 ),
               );
@@ -1261,7 +1568,6 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
   }
 
   void _confirmDeleteReview(BuildContext context, String reviewId) {
-    final cubit = context.read<FieldDetailsCubit>();
     final messenger = ScaffoldMessenger.of(context);
     showDialog(
       context: context,
@@ -1277,7 +1583,7 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
             onPressed: () async {
               Navigator.of(ctx).pop();
-              final success = await cubit.deleteReview(reviewId);
+              final success = await _fieldDetailsCubit.deleteReview(reviewId);
               if (mounted && success) {
                 messenger.showSnackBar(
                   const SnackBar(
@@ -1287,7 +1593,7 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
                 );
               }
             },
-            child: const Text('حذف', style: TextStyle(color: Colors.white)),
+            child: Text('حذف', style: TextStyle(color: AppColors.backgroundLight)),
           ),
         ],
       ),
@@ -1299,7 +1605,10 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
       padding: EdgeInsets.symmetric(vertical: 2.h),
       child: Row(
         children: [
-          Text('$star', style: AppTypography.small(color: AppColors.textSecondaryLight)),
+          Text(
+            '$star',
+            style: AppTypography.small(color: AppColors.textSecondaryLight),
+          ),
           SizedBox(width: 4.w),
           Icon(Icons.star, size: 10.sp, color: AppColors.accent),
           SizedBox(width: 6.w),
@@ -1308,7 +1617,9 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
               borderRadius: BorderRadius.circular(4.r),
               child: LinearProgressIndicator(
                 value: percent,
-                backgroundColor: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05),
+                backgroundColor: isDark
+                    ? Colors.white10
+                    : AppColors.surfaceDark.withValues(alpha: 0.05),
                 color: AppColors.primary,
                 minHeight: 6.h,
               ),
@@ -1320,14 +1631,21 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
   }
 
   // Widget 10: Related Fields Carousel
-  Widget _buildRelatedFieldsSection(BuildContext context, List<FieldModel> related, bool isDark) {
+  Widget _buildRelatedFieldsSection(
+    BuildContext context,
+    Size size,
+    List<FieldModel> related,
+    bool isDark,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           'ملاعب مشابهة',
           style: AppTypography.title(
-            color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+            color: isDark
+                ? AppColors.textPrimaryDark
+                : AppColors.textPrimaryLight,
           ).copyWith(fontWeight: FontWeight.bold),
         ),
         SizedBox(height: 12.h),
@@ -1340,25 +1658,32 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
             itemBuilder: (context, index) {
               final rel = related[index];
               return GestureDetector(
-                onTap: () => context.push('/field-details/${rel.id}'),
+                onTap: () => context.pushNamed(
+                  AppRouter.fieldDetailsName,
+                  queryParameters: {'fieldId': rel.id},
+                ),
                 child: Container(
                   width: 200.w,
                   decoration: BoxDecoration(
                     color: isDark ? AppColors.cardDark : AppColors.cardLight,
                     borderRadius: BorderRadius.circular(16.r),
                     border: Border.all(
-                      color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.06),
+                      color: isDark
+                          ? Colors.white10
+                          : Colors.black.withValues(alpha: 0.06),
                     ),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       ClipRRect(
-                        borderRadius: BorderRadius.vertical(top: Radius.circular(16.r)),
+                        borderRadius: BorderRadius.vertical(
+                          top: Radius.circular(16.r),
+                        ),
                         child: CachedNetworkImage(
                           imageUrl: rel.mainImage,
                           height: 100.h,
-                          width: double.infinity,
+                          width: size.width,
                           fit: BoxFit.cover,
                         ),
                       ),
@@ -1370,7 +1695,9 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
                             Text(
                               rel.name,
                               style: AppTypography.body(
-                                color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                                color: isDark
+                                    ? AppColors.textPrimaryDark
+                                    : AppColors.textPrimaryLight,
                               ).copyWith(fontWeight: FontWeight.bold),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -1381,9 +1708,9 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
                               children: [
                                 Text(
                                   '${rel.pricePerHour.toInt()} ج.م / ساعة',
-                                  style: AppTypography.small(color: AppColors.primary).copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                                  style: AppTypography.small(
+                                    color: AppColors.primary,
+                                  ).copyWith(fontWeight: FontWeight.bold),
                                 ),
                                 RatingBadge(rating: rel.rating),
                               ],
@@ -1442,9 +1769,9 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
                       children: [
                         Text(
                           '${field.pricePerHour.toInt()} ',
-                          style: AppTypography.heading2(color: AppColors.primary).copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: AppTypography.heading2(
+                            color: AppColors.primary,
+                          ).copyWith(fontWeight: FontWeight.bold),
                         ),
                         Text(
                           'جنيه / ساعة',
@@ -1454,13 +1781,19 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
                     ),
                     Row(
                       children: [
-                        Icon(Icons.access_time, size: 12.sp, color: AppColors.textSecondaryLight),
+                        Icon(
+                          Icons.access_time,
+                          size: 12.sp,
+                          color: AppColors.textSecondaryLight,
+                        ),
                         SizedBox(width: 4.w),
                         Expanded(
                           child: Text(
                             'الموعد المحدد: $selectedSlot',
                             style: AppTypography.small(
-                              color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                              color: isDark
+                                  ? AppColors.textSecondaryDark
+                                  : AppColors.textSecondaryLight,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -1476,8 +1809,18 @@ class _FieldDetailsViewState extends State<_FieldDetailsView> {
                 title: 'احجز الآن',
                 width: 150.w,
                 onPressed: () {
-                  context.push(
-                    '/booking',
+                  if (_bookedSlots.contains(selectedSlot)) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('هذا الموعد محجوز بالفعل، يرجى اختيار موعد آخر.'),
+                        backgroundColor: AppColors.error,
+                      ),
+                    );
+                    return;
+                  }
+
+                  context.pushNamed(
+                    AppRouter.bookingName,
                     extra: {
                       'fieldId': field.id,
                       'fieldName': field.name,

@@ -1,3 +1,4 @@
+import 'package:field_time/app/router/app_router.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -24,10 +25,21 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
+  late final LocaleCubit _localeCubit;
+  late final ProfileCubit _profileCubit;
+  late final AuthCubit _authCubit;
+  late final bool isArabic;
+
   @override
   void initState() {
     super.initState();
-    context.read<ProfileCubit>().loadProfile();
+    _localeCubit = context.read<LocaleCubit>();
+    _profileCubit = context.read<ProfileCubit>();
+    _authCubit = context.read<AuthCubit>();
+    isArabic = _localeCubit.state.isArabic;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _profileCubit.loadProfile();
+    });
   }
 
   void _showSettingsSheet(BuildContext context) {
@@ -44,10 +56,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  void _showEditProfileSheet(BuildContext context, String name, String phone, String city) {
-    final cubit = context.read<ProfileCubit>();
+  void _showEditProfileSheet(
+    BuildContext context,
+    String name,
+    String phone,
+    String city,
+  ) {
     final messenger = ScaffoldMessenger.of(context);
-    final isArabic = context.read<LocaleCubit>().state.isArabic;
 
     showModalBottomSheet(
       context: context,
@@ -63,7 +78,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         currentPhone: phone,
         currentCity: city,
         onSubmit: (newName, newPhone, newCity) async {
-          final success = await cubit.updateProfile(
+          final success = await _profileCubit.updateProfile(
             fullName: newName,
             phone: newPhone,
             city: newCity,
@@ -71,7 +86,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
           if (success) {
             messenger.showSnackBar(
               SnackBar(
-                content: Text(isArabic ? 'تم تحديث البيانات الشخصية بنجاح!' : 'Profile updated successfully!'),
+                content: Text(
+                  isArabic
+                      ? 'تم تحديث البيانات الشخصية بنجاح!'
+                      : 'Profile updated successfully!',
+                ),
                 duration: const Duration(seconds: 2),
                 behavior: SnackBarBehavior.floating,
               ),
@@ -83,9 +102,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _showChangeAvatarSheet(BuildContext context, String currentAvatar) {
-    final cubit = context.read<ProfileCubit>();
     final messenger = ScaffoldMessenger.of(context);
-    final isArabic = context.read<LocaleCubit>().state.isArabic;
 
     showModalBottomSheet(
       context: context,
@@ -99,11 +116,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
       builder: (context) => ChangeAvatarSheet(
         currentAvatar: currentAvatar,
         onSelected: (newAvatarUrl) async {
-          final success = await cubit.updateAvatar(newAvatarUrl);
+          final success = await _profileCubit.updateAvatar(newAvatarUrl);
           if (success) {
             messenger.showSnackBar(
               SnackBar(
-                content: Text(isArabic ? 'تم تحديث الصورة الشخصية بنجاح!' : 'Avatar updated successfully!'),
+                content: Text(
+                  isArabic
+                      ? 'تم تحديث الصورة الشخصية بنجاح!'
+                      : 'Avatar updated successfully!',
+                ),
                 duration: const Duration(seconds: 2),
                 behavior: SnackBarBehavior.floating,
               ),
@@ -115,9 +136,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _showChangePasswordSheet(BuildContext context) {
-    final cubit = context.read<ProfileCubit>();
     final messenger = ScaffoldMessenger.of(context);
-    final isArabic = context.read<LocaleCubit>().state.isArabic;
 
     showModalBottomSheet(
       context: context,
@@ -130,14 +149,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
       builder: (context) => ChangePasswordSheet(
         onSubmit: (currentPassword, newPassword) async {
-          final success = await cubit.changePassword(
+          final success = await _profileCubit.changePassword(
             currentPassword: currentPassword,
             newPassword: newPassword,
           );
           if (success) {
             messenger.showSnackBar(
               SnackBar(
-                content: Text(isArabic ? 'تم تغيير كلمة المرور بنجاح!' : 'Password changed successfully!'),
+                content: Text(
+                  isArabic
+                      ? 'تم تغيير كلمة المرور بنجاح!'
+                      : 'Password changed successfully!',
+                ),
                 duration: const Duration(seconds: 2),
                 behavior: SnackBarBehavior.floating,
               ),
@@ -152,7 +175,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final l10n = AppLocalizations.of(context);
-    final isArabic = context.read<LocaleCubit>().state.isArabic;
 
     return Scaffold(
       appBar: AppBar(
@@ -160,7 +182,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
         title: Text(
           l10n?.profile ?? (isArabic ? 'الملف الشخصي' : 'Profile'),
           style: AppTypography.heading3(
-            color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+            color: isDark
+                ? AppColors.textPrimaryDark
+                : AppColors.textPrimaryLight,
           ).copyWith(fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
@@ -168,7 +192,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           IconButton(
             icon: Icon(
               Icons.settings_outlined,
-              color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+              color: isDark
+                  ? AppColors.textPrimaryDark
+                  : AppColors.textPrimaryLight,
             ),
             onPressed: () => _showSettingsSheet(context),
           ),
@@ -180,10 +206,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
           child: BlocBuilder<ProfileCubit, ProfileState>(
             builder: (context, state) {
               final user = (state is ProfileLoaded) ? state.user : null;
-              final name = user?.fullName ?? (isArabic ? 'أحمد محمد' : 'Ahmed Mohamed');
+              final name =
+                  user?.fullName ?? (isArabic ? 'أحمد محمد' : 'Ahmed Mohamed');
               final phone = user?.phone ?? '01012345678';
               final city = user?.city ?? (isArabic ? 'القاهرة' : 'Cairo');
-              final avatar = user?.avatarUrl ??
+              final avatar =
+                  user?.avatarUrl ??
                   'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400';
 
               return Column(
@@ -200,7 +228,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             height: 100.w,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              border: Border.all(color: AppColors.primary, width: 3.w),
+                              border: Border.all(
+                                color: AppColors.primary,
+                                width: 3.w,
+                              ),
                             ),
                             child: ClipOval(
                               child: AppImage(
@@ -221,7 +252,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               child: Icon(
                                 Icons.camera_alt,
                                 size: 16.sp,
-                                color: Colors.white,
+                                color: AppColors.backgroundLight,
                               ),
                             ),
                           ),
@@ -233,14 +264,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Text(
                     name,
                     style: AppTypography.heading3(
-                      color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                      color: isDark
+                          ? AppColors.textPrimaryDark
+                          : AppColors.textPrimaryLight,
                     ),
                   ),
                   SizedBox(height: 4.h),
                   Text(
                     '$phone • $city',
                     style: AppTypography.caption(
-                      color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                      color: isDark
+                          ? AppColors.textSecondaryDark
+                          : AppColors.textSecondaryLight,
                     ),
                   ),
                   SizedBox(height: 28.h),
@@ -253,7 +288,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       boxShadow: [
                         if (!isDark)
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.04),
+                            color: AppColors.surfaceDark.withValues(
+                              alpha: 0.04,
+                            ),
                             blurRadius: 12,
                             offset: const Offset(0, 4),
                           ),
@@ -263,13 +300,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       children: [
                         _buildOptionTile(
                           icon: Icons.storefront_outlined,
-                          title: isArabic ? 'لوحة تحكم صاحب الملعب' : 'Field Owner Dashboard',
+                          title: isArabic
+                              ? 'لوحة تحكم صاحب الملعب'
+                              : 'Field Owner Dashboard',
                           textColor: AppColors.primary,
                           iconColor: AppColors.primary,
                           onTap: () async {
-                            final authenticated = await OwnerPasswordDialog.show(context);
+                            final authenticated =
+                                await OwnerPasswordDialog.show(context);
                             if (authenticated && context.mounted) {
-                              context.push('/owner-dashboard');
+                              context.pushNamed(AppRouter.ownerDashboardName);
                             }
                           },
                           isDark: isDark,
@@ -277,40 +317,54 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         const Divider(height: 1, color: AppColors.greyBorder),
                         _buildOptionTile(
                           icon: Icons.person_outline,
-                          title: isArabic ? 'المعلومات الشخصية' : 'Personal Information',
-                          onTap: () => _showEditProfileSheet(context, name, phone, city),
+                          title: isArabic
+                              ? 'المعلومات الشخصية'
+                              : 'Personal Information',
+                          onTap: () =>
+                              _showEditProfileSheet(context, name, phone, city),
                           isDark: isDark,
                         ),
                         const Divider(height: 1, color: AppColors.greyBorder),
                         _buildOptionTile(
                           icon: Icons.lock_outline_rounded,
-                          title: isArabic ? 'تغيير كلمة المرور' : 'Change Password',
+                          title: isArabic
+                              ? 'تغيير كلمة المرور'
+                              : 'Change Password',
                           onTap: () => _showChangePasswordSheet(context),
                           isDark: isDark,
                         ),
                         const Divider(height: 1, color: AppColors.greyBorder),
                         _buildOptionTile(
                           icon: Icons.notifications_none_outlined,
-                          title: l10n?.notifications ?? (isArabic ? 'الإشعارات' : 'Notifications'),
-                          onTap: () => context.push('/notifications'),
+                          title:
+                              l10n?.notifications ??
+                              (isArabic ? 'الإشعارات' : 'Notifications'),
+                          onTap: () =>
+                              context.pushNamed(AppRouter.notificationsName),
                           isDark: isDark,
                         ),
                         const Divider(height: 1, color: AppColors.greyBorder),
                         _buildOptionTile(
                           icon: Icons.settings_outlined,
-                          title: l10n?.settings ?? (isArabic ? 'الإعدادات والتفضيلات' : 'Settings & Preferences'),
+                          title:
+                              l10n?.settings ??
+                              (isArabic
+                                  ? 'الإعدادات والتفضيلات'
+                                  : 'Settings & Preferences'),
                           onTap: () => _showSettingsSheet(context),
                           isDark: isDark,
                         ),
                         const Divider(height: 1, color: AppColors.greyBorder),
                         _buildOptionTile(
                           icon: Icons.logout,
-                          title: l10n?.logout ?? (isArabic ? 'تسجيل الخروج' : 'Sign Out'),
+                          title:
+                              l10n?.logout ??
+                              (isArabic ? 'تسجيل الخروج' : 'Sign Out'),
                           textColor: AppColors.error,
                           iconColor: AppColors.error,
                           onTap: () {
-                            context.read<AuthCubit>().logout();
-                            context.go('/welcome');
+                            _authCubit.logout();
+                            context.pushReplacementNamed(AppRouter.welcomeName);
                           },
                           isDark: isDark,
                         ),
@@ -338,13 +392,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
       onTap: onTap,
       leading: Icon(
         icon,
-        color: iconColor ?? (isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight),
+        color:
+            iconColor ??
+            (isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight),
         size: 22.sp,
       ),
       title: Text(
         title,
         style: AppTypography.body(
-          color: textColor ?? (isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight),
+          color:
+              textColor ??
+              (isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight),
         ).copyWith(fontWeight: FontWeight.w500),
       ),
       trailing: Icon(

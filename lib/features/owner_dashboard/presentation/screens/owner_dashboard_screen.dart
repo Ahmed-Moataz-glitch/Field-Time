@@ -1,4 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:field_time/app/router/app_router.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -9,24 +10,39 @@ import 'package:field_time/core/widgets/custom_text_field.dart';
 import 'package:field_time/core/widgets/primary_button.dart';
 import 'package:field_time/features/booking/data/models/booking_model.dart';
 import 'package:field_time/features/home/data/models/field_model.dart';
-import 'package:field_time/features/owner_dashboard/data/repositories/owner_repository.dart';
 import 'package:field_time/features/owner_dashboard/presentation/cubit/owner_dashboard_cubit.dart';
 import 'package:field_time/features/owner_dashboard/presentation/cubit/owner_dashboard_state.dart';
 
-class OwnerDashboardScreen extends StatelessWidget {
+class OwnerDashboardScreen extends StatefulWidget {
   const OwnerDashboardScreen({super.key});
 
   @override
+  State<OwnerDashboardScreen> createState() => _OwnerDashboardScreenState();
+}
+
+class _OwnerDashboardScreenState extends State<OwnerDashboardScreen> {
+  late final OwnerDashboardCubit _ownerDashboardCubit;
+
+  @override
+  void initState() {
+    super.initState();
+    _ownerDashboardCubit = context.read<OwnerDashboardCubit>();
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => OwnerDashboardCubit(OwnerRepository())..loadDashboardData(),
-      child: const _OwnerDashboardView(),
-    );
+    return _OwnerDashboardView(_ownerDashboardCubit);
   }
 }
 
 class _OwnerDashboardView extends StatefulWidget {
-  const _OwnerDashboardView();
+  final OwnerDashboardCubit ownerDashboardCubit;
+  const _OwnerDashboardView(this.ownerDashboardCubit);
 
   @override
   State<_OwnerDashboardView> createState() => _OwnerDashboardViewState();
@@ -34,20 +50,26 @@ class _OwnerDashboardView extends StatefulWidget {
 
 class _OwnerDashboardViewState extends State<_OwnerDashboardView> {
   bool _isAuthenticated = false;
-  final TextEditingController _passController = TextEditingController();
+  late final TextEditingController _passwordController;
   bool _obscurePass = true;
   String? _passError;
 
   static const String _requiredPassword = 'GLITCH TECH';
 
   @override
+  void initState() {
+    super.initState();
+    _passwordController = TextEditingController();
+  }
+
+  @override
   void dispose() {
-    _passController.dispose();
+    _passwordController.dispose();
     super.dispose();
   }
 
   void _checkPassword() {
-    final input = _passController.text.trim();
+    final input = _passwordController.text.trim();
     if (input == _requiredPassword) {
       setState(() {
         _isAuthenticated = true;
@@ -64,10 +86,14 @@ class _OwnerDashboardViewState extends State<_OwnerDashboardView> {
     showDialog(
       context: context,
       builder: (dialogCtx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20.r),
+        ),
         title: Text(
           'تأكيد حذف الملعب',
-          style: AppTypography.title(color: AppColors.error).copyWith(fontWeight: FontWeight.bold),
+          style: AppTypography.title(
+            color: AppColors.error,
+          ).copyWith(fontWeight: FontWeight.bold),
         ),
         content: Text(
           'هل أنت تأكد من حذف ملعب (${field.name})؟ سيتم التحقق من عدم وجود حجوزات قائمة أولاً.',
@@ -81,13 +107,18 @@ class _OwnerDashboardViewState extends State<_OwnerDashboardView> {
           ElevatedButton(
             onPressed: () {
               Navigator.pop(dialogCtx);
-              context.read<OwnerDashboardCubit>().deleteField(field.id);
+              widget.ownerDashboardCubit.deleteField(field.id);
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.error,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12.r),
+              ),
             ),
-            child: const Text('تأكيد الحذف', style: TextStyle(color: Colors.white)),
+            child: Text(
+              'تأكيد الحذف',
+              style: TextStyle(color: AppColors.backgroundLight),
+            ),
           ),
         ],
       ),
@@ -106,7 +137,7 @@ class _OwnerDashboardViewState extends State<_OwnerDashboardView> {
             boxShadow: [
               if (!isDark)
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
+                  color: AppColors.surfaceDark.withValues(alpha: 0.05),
                   blurRadius: 16,
                   offset: const Offset(0, 4),
                 ),
@@ -131,26 +162,32 @@ class _OwnerDashboardViewState extends State<_OwnerDashboardView> {
               Text(
                 'حماية لوحة التحكم',
                 style: AppTypography.heading3(
-                  color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                  color: isDark
+                      ? AppColors.textPrimaryDark
+                      : AppColors.textPrimaryLight,
                 ).copyWith(fontWeight: FontWeight.bold),
               ),
               SizedBox(height: 8.h),
               Text(
                 'يرجى إدخال كلمة مرور صاحب الملعب للوصول إلى البيانات الإحصائية والملاعب',
                 style: AppTypography.caption(
-                  color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                  color: isDark
+                      ? AppColors.textSecondaryDark
+                      : AppColors.textSecondaryLight,
                 ),
                 textAlign: TextAlign.center,
               ),
               SizedBox(height: 24.h),
               CustomTextField(
-                controller: _passController,
+                controller: _passwordController,
                 hintText: 'أدخل كلمة المرور (GLITCH TECH)...',
                 isPassword: _obscurePass,
                 prefixIcon: const Icon(Icons.key_outlined),
                 suffixIcon: IconButton(
                   icon: Icon(
-                    _obscurePass ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                    _obscurePass
+                        ? Icons.visibility_off_outlined
+                        : Icons.visibility_outlined,
                     color: AppColors.iconGrey,
                   ),
                   onPressed: () => setState(() => _obscurePass = !_obscurePass),
@@ -193,15 +230,21 @@ class _OwnerDashboardViewState extends State<_OwnerDashboardView> {
         title: Text(
           'لوحة تحكم صاحب الملعب',
           style: AppTypography.heading3(
-            color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+            color: isDark
+                ? AppColors.textPrimaryDark
+                : AppColors.textPrimaryLight,
           ),
         ),
         centerTitle: true,
         actions: [
           if (_isAuthenticated)
             IconButton(
-              icon: Icon(Icons.add_circle_outline, color: AppColors.primary, size: 26.sp),
-              onPressed: () => context.push('/add-field'),
+              icon: Icon(
+                Icons.add_circle_outline,
+                color: AppColors.primary,
+                size: 26.sp,
+              ),
+              onPressed: () => context.pushNamed(AppRouter.addFieldName),
             ),
         ],
       ),
@@ -209,232 +252,277 @@ class _OwnerDashboardViewState extends State<_OwnerDashboardView> {
         child: !_isAuthenticated
             ? _buildPasswordGate(isDark)
             : BlocConsumer<OwnerDashboardCubit, OwnerDashboardState>(
-          listener: (context, state) {
-            if (state is OwnerOperationSuccess) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(state.message),
-                  backgroundColor: AppColors.success,
-                ),
-              );
-            } else if (state is OwnerDashboardError) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(state.message),
-                  backgroundColor: AppColors.error,
-                ),
-              );
-            }
-          },
-          builder: (context, state) {
-            if (state is OwnerDashboardLoading) {
-              return const Center(child: CircularProgressIndicator(color: AppColors.primary));
-            } else if (state is OwnerDashboardLoaded) {
-              final stats = state.stats;
-              final fields = state.fields;
-              final bookings = state.bookings;
-
-              return RefreshIndicator(
-                onRefresh: () => context.read<OwnerDashboardCubit>().loadDashboardData(),
-                color: AppColors.primary,
-                child: SingleChildScrollView(
-                  padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 16.h),
-                  child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // 1. Analytics KPI Cards Grid
-                    GridView.count(
-                      crossAxisCount: 2,
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      crossAxisSpacing: 12.w,
-                      mainAxisSpacing: 12.h,
-                      childAspectRatio: 1.3,
-                      children: [
-                        _kpiCard(
-                          title: 'إجمالي الأرباح',
-                          value: '${stats.totalEarnings.toInt()} ج.م',
-                          icon: Icons.account_balance_wallet_outlined,
-                          color: AppColors.primary,
-                          isDark: isDark,
-                        ),
-                        _kpiCard(
-                          title: 'الحجوزات الكلية',
-                          value: '${stats.totalBookings} حجز',
-                          icon: Icons.bookmark_added_outlined,
-                          color: Colors.blue,
-                          isDark: isDark,
-                        ),
-                        _kpiCard(
-                          title: 'الملاعب النشطة',
-                          value: '${stats.activeFieldsCount} ملعب',
-                          icon: Icons.sports_soccer_outlined,
-                          color: Colors.orange,
-                          isDark: isDark,
-                        ),
-                        _kpiCard(
-                          title: 'نسبة الإشغال',
-                          value: '${stats.occupancyRate}%',
-                          icon: Icons.trending_up,
-                          color: AppColors.success,
-                          isDark: isDark,
-                        ),
-                      ],
-                    ),
-
-                    SizedBox(height: 24.h),
-
-                    // 2. Quick Action Buttons Grid
-                    GridView.count(
-                      crossAxisCount: 2,
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      crossAxisSpacing: 10.w,
-                      mainAxisSpacing: 10.h,
-                      childAspectRatio: 2.1,
-                      children: [
-                        _actionTile(
-                          title: 'إضافة ملعب جديد',
-                          icon: Icons.add_business_outlined,
-                          color: AppColors.primary,
-                          isDark: isDark,
-                          onTap: () => context.push('/add-field'),
-                        ),
-                        _actionTile(
-                          title: 'إدارة الحجوزات',
-                          icon: Icons.calendar_month_outlined,
-                          color: Colors.blue,
-                          isDark: isDark,
-                          onTap: () => context.push('/owner-bookings'),
-                        ),
-                        _actionTile(
-                          title: 'إدارة الكوبونات',
-                          icon: Icons.confirmation_number_outlined,
-                          color: Colors.orange,
-                          isDark: isDark,
-                          onTap: () => context.push('/manage-coupons'),
-                        ),
-                        _actionTile(
-                          title: 'الإحصائيات',
-                          icon: Icons.bar_chart_outlined,
-                          color: Colors.purple,
-                          isDark: isDark,
-                          onTap: () => context.push('/owner-stats'),
-                        ),
-                      ],
-                    ),
-
-                    SizedBox(height: 28.h),
-
-                    // 3. My Fields Section Header
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'ملاعبي (${fields.length})',
-                          style: AppTypography.title(
-                            color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
-                          ).copyWith(fontWeight: FontWeight.bold),
-                        ),
-                        TextButton.icon(
-                          onPressed: () => context.push('/add-field'),
-                          icon: Icon(Icons.add, size: 18.sp, color: AppColors.primary),
-                          label: Text(
-                            'إضافة ملعب',
-                            style: AppTypography.caption(color: AppColors.primary).copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 12.h),
-
-                    // My Fields List
-                    if (fields.isEmpty)
-                      Center(
-                        child: Padding(
-                          padding: EdgeInsets.symmetric(vertical: 20.h),
-                          child: Text(
-                            'لم تقم بإضافة أية ملاعب بعد.',
-                            style: AppTypography.body(color: AppColors.textSecondaryLight),
-                          ),
-                        ),
-                      )
-                    else
-                      ListView.separated(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: fields.length,
-                        separatorBuilder: (context, index) => SizedBox(height: 14.h),
-                        itemBuilder: (context, index) {
-                          final field = fields[index];
-                          return _buildOwnerFieldCard(context, field, isDark);
-                        },
+                listener: (context, state) {
+                  if (state is OwnerOperationSuccess) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(state.message),
+                        backgroundColor: AppColors.success,
                       ),
+                    );
+                  } else if (state is OwnerDashboardError) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(state.message),
+                        backgroundColor: AppColors.error,
+                      ),
+                    );
+                  }
+                },
+                builder: (context, state) {
+                  if (state is OwnerDashboardLoading) {
+                    return const Center(
+                      child: CircularProgressIndicator(
+                        color: AppColors.primary,
+                      ),
+                    );
+                  } else if (state is OwnerDashboardLoaded) {
+                    final stats = state.stats;
+                    final fields = state.fields;
+                    final bookings = state.bookings;
 
-                    SizedBox(height: 28.h),
-
-                    // 4. Recent Player Bookings Header
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'أحدث حجوزات اللاعبين',
-                          style: AppTypography.title(
-                            color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
-                          ).copyWith(fontWeight: FontWeight.bold),
+                    return RefreshIndicator(
+                      onRefresh: () async =>
+                          await widget.ownerDashboardCubit.loadDashboardData(),
+                      color: AppColors.primary,
+                      child: SingleChildScrollView(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 20.w,
+                          vertical: 16.h,
                         ),
-                        TextButton(
-                          onPressed: () => context.push('/owner-bookings'),
-                          child: Text(
-                            'عرض الكل',
-                            style: AppTypography.caption(color: AppColors.primary).copyWith(
-                              fontWeight: FontWeight.bold,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // 1. Analytics KPI Cards Grid
+                            GridView.count(
+                              crossAxisCount: 2,
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              crossAxisSpacing: 12.w,
+                              mainAxisSpacing: 12.h,
+                              childAspectRatio: 1.3,
+                              children: [
+                                _kpiCard(
+                                  title: 'إجمالي الأرباح',
+                                  value: '${stats.totalEarnings.toInt()} ج.م',
+                                  icon: Icons.account_balance_wallet_outlined,
+                                  color: AppColors.primary,
+                                  isDark: isDark,
+                                ),
+                                _kpiCard(
+                                  title: 'الحجوزات الكلية',
+                                  value: '${stats.totalBookings} حجز',
+                                  icon: Icons.bookmark_added_outlined,
+                                  color: Colors.blue,
+                                  isDark: isDark,
+                                ),
+                                _kpiCard(
+                                  title: 'الملاعب النشطة',
+                                  value: '${stats.activeFieldsCount} ملعب',
+                                  icon: Icons.sports_soccer_outlined,
+                                  color: Colors.orange,
+                                  isDark: isDark,
+                                ),
+                                _kpiCard(
+                                  title: 'نسبة الإشغال',
+                                  value: '${stats.occupancyRate}%',
+                                  icon: Icons.trending_up,
+                                  color: AppColors.success,
+                                  isDark: isDark,
+                                ),
+                              ],
                             ),
-                          ),
+
+                            SizedBox(height: 24.h),
+
+                            // 2. Quick Action Buttons Grid
+                            GridView.count(
+                              crossAxisCount: 2,
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              crossAxisSpacing: 10.w,
+                              mainAxisSpacing: 10.h,
+                              childAspectRatio: 2.1,
+                              children: [
+                                _actionTile(
+                                  title: 'إضافة ملعب جديد',
+                                  icon: Icons.add_business_outlined,
+                                  color: AppColors.primary,
+                                  isDark: isDark,
+                                  onTap: () =>
+                                      context.pushNamed(AppRouter.addFieldName, extra: widget.ownerDashboardCubit),
+                                ),
+                                _actionTile(
+                                  title: 'إدارة الحجوزات',
+                                  icon: Icons.calendar_month_outlined,
+                                  color: Colors.blue,
+                                  isDark: isDark,
+                                  onTap: () => context.pushNamed(
+                                    AppRouter.ownerBookingsName,
+                                    extra: widget.ownerDashboardCubit,
+                                  ),
+                                ),
+                                _actionTile(
+                                  title: 'إدارة الكوبونات',
+                                  icon: Icons.confirmation_number_outlined,
+                                  color: Colors.orange,
+                                  isDark: isDark,
+                                  onTap: () => context.pushNamed(
+                                    AppRouter.manageCouponsName,
+                                  ),
+                                ),
+                                _actionTile(
+                                  title: 'الإحصائيات',
+                                  icon: Icons.bar_chart_outlined,
+                                  color: Colors.purple,
+                                  isDark: isDark,
+                                  onTap: () => context.pushNamed(
+                                    AppRouter.ownerStatsName,
+                                    extra: widget.ownerDashboardCubit,
+                                  ),
+                                ),
+                              ],
+                            ),
+
+                            SizedBox(height: 28.h),
+
+                            // 3. My Fields Section Header
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'ملاعبي (${fields.length})',
+                                  style: AppTypography.title(
+                                    color: isDark
+                                        ? AppColors.textPrimaryDark
+                                        : AppColors.textPrimaryLight,
+                                  ).copyWith(fontWeight: FontWeight.bold),
+                                ),
+                                TextButton.icon(
+                                  onPressed: () =>
+                                      context.pushNamed(AppRouter.addFieldName),
+                                  icon: Icon(
+                                    Icons.add,
+                                    size: 18.sp,
+                                    color: AppColors.primary,
+                                  ),
+                                  label: Text(
+                                    'إضافة ملعب',
+                                    style: AppTypography.caption(
+                                      color: AppColors.primary,
+                                    ).copyWith(fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            SizedBox(height: 12.h),
+
+                            // My Fields List
+                            if (fields.isEmpty)
+                              Center(
+                                child: Padding(
+                                  padding: EdgeInsets.symmetric(vertical: 20.h),
+                                  child: Text(
+                                    'لم تقم بإضافة أية ملاعب بعد.',
+                                    style: AppTypography.body(
+                                      color: AppColors.textSecondaryLight,
+                                    ),
+                                  ),
+                                ),
+                              )
+                            else
+                              ListView.separated(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                itemCount: fields.length,
+                                separatorBuilder: (context, index) =>
+                                    SizedBox(height: 14.h),
+                                itemBuilder: (context, index) {
+                                  final field = fields[index];
+                                  return _buildOwnerFieldCard(
+                                    context,
+                                    field,
+                                    isDark,
+                                  );
+                                },
+                              ),
+
+                            SizedBox(height: 28.h),
+
+                            // 4. Recent Player Bookings Header
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'أحدث حجوزات اللاعبين',
+                                  style: AppTypography.title(
+                                    color: isDark
+                                        ? AppColors.textPrimaryDark
+                                        : AppColors.textPrimaryLight,
+                                  ).copyWith(fontWeight: FontWeight.bold),
+                                ),
+                                TextButton(
+                                  onPressed: () => context.pushNamed(
+                                    AppRouter.manageCouponsName,
+                                  ),
+                                  child: Text(
+                                    'عرض الكل',
+                                    style: AppTypography.caption(
+                                      color: AppColors.primary,
+                                    ).copyWith(fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            SizedBox(height: 12.h),
+
+                            // Bookings Preview
+                            ListView.separated(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              itemCount: bookings.take(3).length,
+                              separatorBuilder: (context, index) =>
+                                  SizedBox(height: 10.h),
+                              itemBuilder: (context, index) {
+                                final b = bookings[index];
+                                return _buildRecentBookingTile(b, isDark);
+                              },
+                            ),
+
+                            SizedBox(height: 20.h),
+                          ],
                         ),
-                      ],
-                    ),
-                    SizedBox(height: 12.h),
-
-                    // Bookings Preview
-                    ListView.separated(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: bookings.take(3).length,
-                      separatorBuilder: (context, index) => SizedBox(height: 10.h),
-                      itemBuilder: (context, index) {
-                        final b = bookings[index];
-                        return _buildRecentBookingTile(b, isDark);
-                      },
-                    ),
-
-                    SizedBox(height: 20.h),
-                  ],
-                ),
+                      ),
+                    );
+                  } else if (state is OwnerDashboardError) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.error_outline,
+                            size: 48.sp,
+                            color: AppColors.error,
+                          ),
+                          SizedBox(height: 12.h),
+                          Text(
+                            state.message,
+                            style: AppTypography.body(color: AppColors.error),
+                          ),
+                          SizedBox(height: 16.h),
+                          ElevatedButton(
+                            onPressed: () async => await widget
+                                .ownerDashboardCubit
+                                .loadDashboardData(),
+                            child: const Text('إعادة المحاولة'),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+                  return const SizedBox.shrink();
+                },
               ),
-            );
-          } else if (state is OwnerDashboardError) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.error_outline, size: 48.sp, color: AppColors.error),
-                    SizedBox(height: 12.h),
-                    Text(state.message, style: AppTypography.body(color: AppColors.error)),
-                    SizedBox(height: 16.h),
-                    ElevatedButton(
-                      onPressed: () => context.read<OwnerDashboardCubit>().loadDashboardData(),
-                      child: const Text('إعادة المحاولة'),
-                    ),
-                  ],
-                ),
-              );
-            }
-            return const SizedBox.shrink();
-          },
-        ),
       ),
     );
   }
@@ -454,7 +542,7 @@ class _OwnerDashboardViewState extends State<_OwnerDashboardView> {
         boxShadow: [
           if (!isDark)
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
+              color: AppColors.surfaceDark.withValues(alpha: 0.04),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -479,13 +567,17 @@ class _OwnerDashboardViewState extends State<_OwnerDashboardView> {
           Text(
             value,
             style: AppTypography.heading3(
-              color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+              color: isDark
+                  ? AppColors.textPrimaryDark
+                  : AppColors.textPrimaryLight,
             ).copyWith(fontWeight: FontWeight.bold),
           ),
           Text(
             title,
             style: AppTypography.small(
-              color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+              color: isDark
+                  ? AppColors.textSecondaryDark
+                  : AppColors.textSecondaryLight,
             ),
           ),
         ],
@@ -516,7 +608,9 @@ class _OwnerDashboardViewState extends State<_OwnerDashboardView> {
             SizedBox(height: 6.h),
             Text(
               title,
-              style: AppTypography.small(color: color).copyWith(fontWeight: FontWeight.bold),
+              style: AppTypography.small(
+                color: color,
+              ).copyWith(fontWeight: FontWeight.bold),
               textAlign: TextAlign.center,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -527,7 +621,11 @@ class _OwnerDashboardViewState extends State<_OwnerDashboardView> {
     );
   }
 
-  Widget _buildOwnerFieldCard(BuildContext context, FieldModel field, bool isDark) {
+  Widget _buildOwnerFieldCard(
+    BuildContext context,
+    FieldModel field,
+    bool isDark,
+  ) {
     return Container(
       padding: EdgeInsets.all(14.w),
       decoration: BoxDecoration(
@@ -536,7 +634,7 @@ class _OwnerDashboardViewState extends State<_OwnerDashboardView> {
         boxShadow: [
           if (!isDark)
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
+              color: AppColors.surfaceDark.withValues(alpha: 0.04),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -563,7 +661,9 @@ class _OwnerDashboardViewState extends State<_OwnerDashboardView> {
                     Text(
                       field.name,
                       style: AppTypography.title(
-                        color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                        color: isDark
+                            ? AppColors.textPrimaryDark
+                            : AppColors.textPrimaryLight,
                       ).copyWith(fontWeight: FontWeight.bold),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -572,15 +672,17 @@ class _OwnerDashboardViewState extends State<_OwnerDashboardView> {
                     Text(
                       '${field.city} - ${field.area}',
                       style: AppTypography.small(
-                        color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                        color: isDark
+                            ? AppColors.textSecondaryDark
+                            : AppColors.textSecondaryLight,
                       ),
                     ),
                     SizedBox(height: 6.h),
                     Text(
                       '${field.pricePerHour.toInt()} ج.م / ساعة',
-                      style: AppTypography.caption(color: AppColors.primary).copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: AppTypography.caption(
+                        color: AppColors.primary,
+                      ).copyWith(fontWeight: FontWeight.bold),
                     ),
                   ],
                 ),
@@ -599,21 +701,28 @@ class _OwnerDashboardViewState extends State<_OwnerDashboardView> {
                   Text(
                     'حالة الملعب:',
                     style: AppTypography.small(
-                      color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                      color: isDark
+                          ? AppColors.textSecondaryDark
+                          : AppColors.textSecondaryLight,
                     ),
                   ),
                   SizedBox(width: 6.w),
                   Switch.adaptive(
                     value: field.isAvailableToday,
                     activeTrackColor: AppColors.primary,
-                    onChanged: (val) {
-                      context.read<OwnerDashboardCubit>().toggleFieldAvailability(field.id, val);
+                    onChanged: (val) async {
+                      await widget.ownerDashboardCubit.toggleFieldAvailability(
+                        field.id,
+                        val,
+                      );
                     },
                   ),
                   Text(
                     field.isAvailableToday ? 'متاح' : 'مغلق',
                     style: AppTypography.small(
-                      color: field.isAvailableToday ? AppColors.success : AppColors.error,
+                      color: field.isAvailableToday
+                          ? AppColors.success
+                          : AppColors.error,
                     ).copyWith(fontWeight: FontWeight.bold),
                   ),
                 ],
@@ -623,11 +732,22 @@ class _OwnerDashboardViewState extends State<_OwnerDashboardView> {
               Row(
                 children: [
                   IconButton(
-                    icon: Icon(Icons.edit_outlined, color: Colors.blue, size: 20.sp),
-                    onPressed: () => context.push('/edit-field/${field.id}'),
+                    icon: Icon(
+                      Icons.edit_outlined,
+                      color: Colors.blue,
+                      size: 20.sp,
+                    ),
+                    onPressed: () => context.pushNamed(
+                      AppRouter.editFieldName,
+                      queryParameters: {'fieldId': field.id},
+                    ),
                   ),
                   IconButton(
-                    icon: Icon(Icons.delete_outline, color: AppColors.error, size: 20.sp),
+                    icon: Icon(
+                      Icons.delete_outline,
+                      color: AppColors.error,
+                      size: 20.sp,
+                    ),
                     onPressed: () => _showDeleteDialog(context, field),
                   ),
                 ],
@@ -654,7 +774,11 @@ class _OwnerDashboardViewState extends State<_OwnerDashboardView> {
               CircleAvatar(
                 radius: 16.r,
                 backgroundColor: AppColors.primary.withValues(alpha: 0.2),
-                child: Icon(Icons.sports_soccer, size: 16.sp, color: AppColors.primary),
+                child: Icon(
+                  Icons.sports_soccer,
+                  size: 16.sp,
+                  color: AppColors.primary,
+                ),
               ),
               SizedBox(width: 10.w),
               Column(
@@ -663,13 +787,17 @@ class _OwnerDashboardViewState extends State<_OwnerDashboardView> {
                   Text(
                     booking.fieldName,
                     style: AppTypography.body(
-                      color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                      color: isDark
+                          ? AppColors.textPrimaryDark
+                          : AppColors.textPrimaryLight,
                     ).copyWith(fontWeight: FontWeight.bold),
                   ),
                   Text(
                     '${booking.date} | ${booking.startTime}',
                     style: AppTypography.small(
-                      color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                      color: isDark
+                          ? AppColors.textSecondaryDark
+                          : AppColors.textSecondaryLight,
                     ),
                   ),
                 ],
@@ -678,9 +806,9 @@ class _OwnerDashboardViewState extends State<_OwnerDashboardView> {
           ),
           Text(
             '${booking.price.toInt()} ج.م',
-            style: AppTypography.caption(color: AppColors.primary).copyWith(
-              fontWeight: FontWeight.bold,
-            ),
+            style: AppTypography.caption(
+              color: AppColors.primary,
+            ).copyWith(fontWeight: FontWeight.bold),
           ),
         ],
       ),

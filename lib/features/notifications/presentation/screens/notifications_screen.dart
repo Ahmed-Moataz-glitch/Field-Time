@@ -1,3 +1,4 @@
+import 'package:field_time/app/router/app_router.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -17,17 +18,24 @@ class NotificationsScreen extends StatefulWidget {
 }
 
 class _NotificationsScreenState extends State<NotificationsScreen> {
+  late final LocaleCubit _localeCubit;
+  late final NotificationsCubit _notificationsCubit;
+
   @override
   void initState() {
     super.initState();
-    context.read<NotificationsCubit>().loadNotifications();
+    _localeCubit = context.read<LocaleCubit>();
+    _notificationsCubit = context.read<NotificationsCubit>();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _notificationsCubit.loadNotifications();
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final l10n = AppLocalizations.of(context);
-    final isArabic = context.watch<LocaleCubit>().state.isArabic;
+    final isArabic = _localeCubit.state.isArabic;
 
     final filters = [
       {'title': isArabic ? 'الكل' : 'All', 'key': 'all'},
@@ -50,8 +58,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             builder: (context, state) {
               if (state is NotificationsLoaded && state.unreadCount > 0) {
                 return TextButton.icon(
-                  onPressed: () {
-                    context.read<NotificationsCubit>().markAllAsRead();
+                  onPressed: () async {
+                    await _notificationsCubit.markAllAsRead();
                   },
                   icon: Icon(Icons.done_all_rounded, size: 16.sp, color: AppColors.primary),
                   label: Text(
@@ -101,7 +109,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
                         return GestureDetector(
                           onTap: () {
-                            context.read<NotificationsCubit>().filterNotifications(key);
+                            _notificationsCubit.filterNotifications(key);
                           },
                           child: AnimatedContainer(
                             duration: const Duration(milliseconds: 200),
@@ -116,7 +124,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                               title,
                               style: AppTypography.small(
                                 color: isSelected
-                                    ? Colors.white
+                                    ? AppColors.backgroundLight
                                     : (isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight),
                               ).copyWith(fontWeight: FontWeight.bold),
                             ),
@@ -133,7 +141,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                         ? _buildEmptyState(context, isDark, isArabic)
                         : RefreshIndicator(
                             onRefresh: () async {
-                              await context.read<NotificationsCubit>().loadNotifications(isRefresh: true);
+                              await _notificationsCubit.loadNotifications(isRefresh: true);
                             },
                             color: AppColors.primary,
                             backgroundColor: isDark ? AppColors.cardDark : AppColors.cardLight,
@@ -200,7 +208,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         child: Icon(Icons.delete_outline_rounded, color: Colors.white, size: 24.sp),
       ),
       onDismissed: (_) {
-        context.read<NotificationsCubit>().deleteNotification(notif.id);
+        _notificationsCubit.deleteNotification(notif.id);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(isArabic ? 'تم حذف الإشعار' : 'Notification deleted'),
@@ -211,14 +219,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       child: GestureDetector(
         onTap: () {
           if (!notif.isRead) {
-            context.read<NotificationsCubit>().markAsRead(notif.id);
+            _notificationsCubit.markAsRead(notif.id);
           }
 
           if (notif.targetId != null && notif.targetId!.isNotEmpty) {
             if (notif.type == NotificationType.booking) {
-              context.push('/main');
+              context.pushReplacementNamed(AppRouter.appSectionName);
             } else {
-              context.push('/field-details/${notif.targetId}');
+              context.pushNamed(AppRouter.fieldDetailsName, queryParameters: {'fieldId': notif.targetId!});
             }
           }
         },
@@ -232,7 +240,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             borderRadius: BorderRadius.circular(16.r),
             border: Border.all(
               color: notif.isRead
-                  ? (isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05))
+                  ? (isDark ? Colors.white10 : AppColors.surfaceDark.withValues(alpha: 0.05))
                   : AppColors.primary.withValues(alpha: 0.3),
               width: notif.isRead ? 1 : 1.5,
             ),

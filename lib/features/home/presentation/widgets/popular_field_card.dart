@@ -91,6 +91,41 @@ class PopularFieldCard extends StatelessWidget {
                   right: 8.w,
                   child: RatingBadge(rating: field.rating),
                 ),
+                if (field.couponCode != null && field.couponCode!.isNotEmpty)
+                  Positioned(
+                    top: 10.h,
+                    right: 10.w,
+                    child: Container(
+                      padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 3.h),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFFFF9800), Color(0xFFF57C00)],
+                        ),
+                        borderRadius: BorderRadius.circular(8.r),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.orange.withValues(alpha: 0.3),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.confirmation_number_outlined, size: 10.sp, color: Colors.white),
+                          SizedBox(width: 3.w),
+                          Text(
+                            field.couponCode!,
+                            style: AppTypography.small(color: Colors.white).copyWith(
+                              fontSize: 9.sp,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
               ],
             ),
             // Details

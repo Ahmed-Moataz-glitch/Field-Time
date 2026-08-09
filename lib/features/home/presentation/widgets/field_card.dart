@@ -93,6 +93,41 @@ class FieldCard extends StatelessWidget {
                         ),
                       ),
                     ),
+                  if (field.couponCode != null && field.couponCode!.isNotEmpty)
+                    Positioned(
+                      top: 8.h,
+                      right: 8.w,
+                      child: Container(
+                        padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFFFF9800), Color(0xFFF57C00)],
+                          ),
+                          borderRadius: BorderRadius.circular(6.r),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.orange.withValues(alpha: 0.3),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.confirmation_number_outlined, size: 10.sp, color: Colors.white),
+                            SizedBox(width: 2.w),
+                            Text(
+                              field.couponCode!,
+                              style: AppTypography.small(color: Colors.white).copyWith(
+                                fontSize: 9.sp,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                 ],
               ),
               SizedBox(width: 14.w),
@@ -151,9 +186,10 @@ class FieldCard extends StatelessWidget {
                       ],
                     ),
                     SizedBox(height: 8.h),
-                    // Tags Row (Grass & Field Type)
+                    // Tags Row (Grass & Field Type & Coupon Tag)
                     Wrap(
                       spacing: 6.w,
+                      runSpacing: 4.h,
                       children: [
                         Container(
                           padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
@@ -181,6 +217,29 @@ class FieldCard extends StatelessWidget {
                             ).copyWith(fontSize: 10.sp),
                           ),
                         ),
+                        if (field.couponTag != null && field.couponTag!.isNotEmpty)
+                          Container(
+                            padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
+                            decoration: BoxDecoration(
+                              color: Colors.amber.withValues(alpha: 0.15),
+                              border: Border.all(color: Colors.amber.shade700, width: 0.8),
+                              borderRadius: BorderRadius.circular(6.r),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.local_offer_outlined, size: 10.sp, color: Colors.amber.shade800),
+                                SizedBox(width: 3.w),
+                                Text(
+                                  field.couponTag!,
+                                  style: AppTypography.small(color: Colors.amber.shade900).copyWith(
+                                    fontSize: 9.sp,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                       ],
                     ),
                     SizedBox(height: 10.h),

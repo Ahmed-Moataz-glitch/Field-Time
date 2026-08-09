@@ -6,10 +6,12 @@ import 'package:field_time/features/home/data/models/field_model.dart';
 import 'package:field_time/features/owner_dashboard/data/models/owner_stats_model.dart';
 
 class OwnerRepository {
-  final SupabaseClient _supabase;
+  final SupabaseClient? _customSupabase;
 
   OwnerRepository([SupabaseClient? supabase])
-      : _supabase = supabase ?? Supabase.instance.client;
+      : _customSupabase = supabase;
+
+  SupabaseClient get _supabase => _customSupabase ?? Supabase.instance.client;
 
   static final List<FieldModel> _mockOwnerFields = [
     const FieldModel(

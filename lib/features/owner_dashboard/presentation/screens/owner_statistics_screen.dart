@@ -3,20 +3,32 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:field_time/core/constants/app_colors.dart';
 import 'package:field_time/core/constants/app_typography.dart';
-import 'package:field_time/features/owner_dashboard/data/repositories/owner_repository.dart';
 import 'package:field_time/features/owner_dashboard/presentation/cubit/owner_dashboard_cubit.dart';
 import 'package:field_time/features/owner_dashboard/presentation/cubit/owner_dashboard_state.dart';
 
-class OwnerStatisticsScreen extends StatelessWidget {
-  const OwnerStatisticsScreen({super.key});
+class OwnerStatisticsScreen extends StatefulWidget {
+  final OwnerDashboardCubit? ownerDashboardCubit;
+  const OwnerStatisticsScreen({super.key, this.ownerDashboardCubit});
+
+  @override
+  State<OwnerStatisticsScreen> createState() => _OwnerStatisticsScreenState();
+}
+
+class _OwnerStatisticsScreenState extends State<OwnerStatisticsScreen> {
+  OwnerDashboardCubit get _cubit =>
+      widget.ownerDashboardCubit ?? context.read<OwnerDashboardCubit>();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _cubit.loadDashboardData();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) =>
-          OwnerDashboardCubit(OwnerRepository())..loadDashboardData(),
-      child: const _OwnerStatisticsView(),
-    );
+    return const _OwnerStatisticsView();
   }
 }
 
@@ -268,7 +280,7 @@ class _OwnerStatisticsView extends StatelessWidget {
         Text(
           value,
           style: AppTypography.body(
-            color: Colors.white,
+            color: AppColors.backgroundLight,
           ).copyWith(fontWeight: FontWeight.bold),
         ),
         Text(label, style: AppTypography.small(color: Colors.white70)),

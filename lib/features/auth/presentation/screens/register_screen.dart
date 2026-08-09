@@ -1,6 +1,5 @@
 import 'package:field_time/app/router/app_router.dart';
 import 'package:field_time/core/utils/app_dialogs.dart';
-import 'package:field_time/core/utils/get_it.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -27,12 +26,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
   late final TextEditingController _emailController;
   late final TextEditingController _phoneController;
   late final TextEditingController _passwordController;
+  bool _obscurePassword = true;
   String _selectedRole = 'user'; // 'user' (Player) or 'owner' (Field Owner)
 
   @override
   void initState() {
     super.initState();
-    _authCubit = getIt<AuthCubit>();
+    _authCubit = context.read<AuthCubit>();
     _formKey = GlobalKey<FormState>();
     _nameController = TextEditingController();
     _emailController = TextEditingController();
@@ -42,8 +42,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   void dispose() {
-    _authCubit.close();
-    _formKey.currentState?.dispose();
     _nameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
@@ -218,10 +216,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   CustomTextField(
                     controller: _passwordController,
                     hintText: l10n.password,
-                    isPassword: true,
+                    isPassword: _obscurePassword,
                     prefixIcon: const Icon(
                       Icons.lock_outline,
                       color: AppColors.iconGrey,
+                    ),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscurePassword
+                            ? Icons.visibility_off_outlined
+                            : Icons.visibility_outlined,
+                        color: AppColors.iconGrey,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _obscurePassword = !_obscurePassword;
+                        });
+                      },
                     ),
                     validator: (val) {
                       if (val == null || val.trim().isEmpty) {

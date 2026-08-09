@@ -7,12 +7,14 @@ import 'package:field_time/features/notifications/data/models/notification_model
 import 'package:field_time/features/notifications/data/repositories/notification_repository.dart';
 
 class BookingRepository {
-  final SupabaseClient _supabase;
+  final SupabaseClient? _customSupabase;
   final CouponRepository _couponRepository;
 
   BookingRepository({SupabaseClient? supabase, CouponRepository? couponRepository})
-      : _supabase = supabase ?? Supabase.instance.client,
+      : _customSupabase = supabase,
         _couponRepository = couponRepository ?? CouponRepository();
+
+  SupabaseClient get _supabase => _customSupabase ?? Supabase.instance.client;
 
   static final List<BookingModel> _mockBookings = [
     const BookingModel(
@@ -142,7 +144,10 @@ class BookingRepository {
       throw DuplicateBookingFailure('هذا الموعد ($startTime) محجوز بالفعل! يرجى اختيار موعد آخر.');
     }
 
-    final currentUser = _supabase.auth.currentUser;
+    User? currentUser;
+    try {
+      currentUser = _supabase.auth.currentUser;
+    } catch (_) {}
     final now = DateTime.now();
     final bookingCode = '#FT-${now.year}-${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}-${(1000 + now.millisecond % 9000)}';
 

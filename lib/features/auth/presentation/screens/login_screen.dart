@@ -1,7 +1,6 @@
 import 'package:field_time/app/router/app_router.dart';
 import 'package:field_time/core/utils/app_assets.dart';
 import 'package:field_time/core/utils/app_dialogs.dart';
-import 'package:field_time/core/utils/get_it.dart';
 import 'package:field_time/core/widgets/secondary_outlined_button.dart';
 import 'package:field_time/core/widgets/validator.dart';
 import 'package:flutter/material.dart';
@@ -28,11 +27,12 @@ class _LoginScreenState extends State<LoginScreen> {
   late final GlobalKey<FormState> _formKey;
   late final TextEditingController _emailController;
   late final TextEditingController _passwordController;
+  bool _obscurePassword = true;
 
   @override
   void initState() {
     super.initState();
-    _authCubit = getIt<AuthCubit>();
+    _authCubit = context.read<AuthCubit>();
     _formKey = GlobalKey<FormState>();
     _emailController = TextEditingController();
     _passwordController = TextEditingController();
@@ -40,8 +40,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   void dispose() {
-    _authCubit.close();
-    _formKey.currentState?.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
@@ -138,10 +136,23 @@ class _LoginScreenState extends State<LoginScreen> {
                   CustomTextField(
                     controller: _passwordController,
                     hintText: l10n.password,
-                    isPassword: true,
+                    isPassword: _obscurePassword,
                     prefixIcon: const Icon(
                       Icons.lock_outline,
                       color: AppColors.iconGrey,
+                    ),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscurePassword
+                            ? Icons.visibility_off_outlined
+                            : Icons.visibility_outlined,
+                        color: AppColors.iconGrey,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _obscurePassword = !_obscurePassword;
+                        });
+                      },
                     ),
                     validator: Validator.validatePassword,
                   ),

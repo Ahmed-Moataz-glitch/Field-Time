@@ -1,10 +1,11 @@
+import 'package:field_time/app/router/app_router.dart';
+import 'package:field_time/core/utils/url_launcher_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:field_time/core/constants/app_colors.dart';
 import 'package:field_time/core/constants/app_typography.dart';
 import 'package:field_time/core/localization/locale_cubit.dart';
@@ -13,29 +14,24 @@ import 'package:field_time/core/widgets/secondary_outlined_button.dart';
 import 'package:field_time/features/booking/presentation/cubit/booking_cubit.dart';
 import 'package:field_time/features/booking/presentation/cubit/booking_state.dart';
 
-class BookingSuccessScreen extends StatelessWidget {
+class BookingSuccessScreen extends StatefulWidget {
   const BookingSuccessScreen({super.key});
 
+  @override
+  State<BookingSuccessScreen> createState() => _BookingSuccessScreenState();
+}
+
+class _BookingSuccessScreenState extends State<BookingSuccessScreen> {
+  late final LocaleCubit _localeCubit;
+
+  @override
+  void initState() {
+    super.initState();
+    _localeCubit = context.read<LocaleCubit>();
+  }
+
   Future<void> _openGoogleMaps(BuildContext context, String address) async {
-    final query = Uri.encodeComponent(address);
-    final url = Uri.parse('https://www.google.com/maps/search/?api=1&query=$query');
-    try {
-      if (await canLaunchUrl(url)) {
-        await launchUrl(url, mode: LaunchMode.externalApplication);
-      } else {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('العنوان: $address'), backgroundColor: AppColors.primary),
-          );
-        }
-      }
-    } catch (_) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('العنوان: $address'), backgroundColor: AppColors.primary),
-        );
-      }
-    }
+    await UrlLauncherUtils.openGoogleMaps(context, address);
   }
 
   void _shareOrCopyInvoice(
@@ -51,7 +47,8 @@ class BookingSuccessScreen extends StatelessWidget {
     required String? couponCode,
     required bool isArabic,
   }) {
-    final invoiceText = '''
+    final invoiceText =
+        '''
 ================================
 ⚽ FieldTime - إيصال الحجز الفوري
 ================================
@@ -83,7 +80,10 @@ ${discount > 0 ? 'الخصم المطبق ($couponCode): -${discount.toInt()} ج
             Container(
               width: 40.w,
               height: 4.h,
-              decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2.r)),
+              decoration: BoxDecoration(
+                color: Colors.white24,
+                borderRadius: BorderRadius.circular(2.r),
+              ),
             ),
             SizedBox(height: 16.h),
             Row(
@@ -105,7 +105,9 @@ ${discount > 0 ? 'الخصم المطبق ($couponCode): -${discount.toInt()} ج
               ),
               child: Text(
                 invoiceText,
-                style: AppTypography.small(color: Colors.white70).copyWith(fontFamily: 'monospace'),
+                style: AppTypography.small(
+                  color: Colors.white70,
+                ).copyWith(fontFamily: 'monospace'),
               ),
             ),
             SizedBox(height: 20.h),
@@ -115,7 +117,11 @@ ${discount > 0 ? 'الخصم المطبق ($couponCode): -${discount.toInt()} ج
                 Navigator.pop(ctx);
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text(isArabic ? 'تم نسخ إيصال الحجز إلى الحافظة بنجاح! 📋' : 'Receipt copied to clipboard! 📋'),
+                    content: Text(
+                      isArabic
+                          ? 'تم نسخ إيصال الحجز إلى الحافظة بنجاح! 📋'
+                          : 'Receipt copied to clipboard! 📋',
+                    ),
                     backgroundColor: AppColors.success,
                   ),
                 );
@@ -129,7 +135,7 @@ ${discount > 0 ? 'الخصم المطبق ($couponCode): -${discount.toInt()} ج
 
   @override
   Widget build(BuildContext context) {
-    final isArabic = context.watch<LocaleCubit>().state.isArabic;
+    final isArabic = _localeCubit.state.isArabic;
     final todayFormatted = DateFormat('yyyy-MM-dd').format(DateTime.now());
 
     return Scaffold(
@@ -139,7 +145,7 @@ ${discount > 0 ? 'الخصم المطبق ($couponCode): -${discount.toInt()} ج
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
-          onPressed: () => context.go('/main', extra: {'initialIndex': 0}),
+          onPressed: () => context.pushReplacementNamed(AppRouter.appSectionName),
         ),
         title: Text(
           isArabic ? 'تأكيد الحجز الفوري' : 'Instant Booking Confirmation',
@@ -152,17 +158,30 @@ ${discount > 0 ? 'الخصم المطبق ($couponCode): -${discount.toInt()} ج
           padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 16.h),
           child: BlocBuilder<BookingCubit, BookingState>(
             builder: (context, state) {
-              final lastBooking = (state is BookingLoaded) ? state.lastCreatedBooking : null;
+              final lastBooking = (state is BookingLoaded)
+                  ? state.lastCreatedBooking
+                  : null;
 
-              final fieldName = lastBooking?.fieldName ?? (isArabic ? 'أرينا سبورت (Arena Sport)' : 'Arena Sport');
-              final date = lastBooking?.date.isNotEmpty == true ? lastBooking!.date : todayFormatted;
-              final time = '${lastBooking?.startTime ?? "19:00"} - ${lastBooking?.endTime ?? "20:00"}';
+              final fieldName =
+                  lastBooking?.fieldName ??
+                  (isArabic ? 'أرينا سبورت (Arena Sport)' : 'Arena Sport');
+              final date = lastBooking?.date.isNotEmpty == true
+                  ? lastBooking!.date
+                  : todayFormatted;
+              final time =
+                  '${lastBooking?.startTime ?? "19:00"} - ${lastBooking?.endTime ?? "20:00"}';
               final price = lastBooking?.price ?? 350.0;
               final originalPrice = lastBooking?.originalPrice ?? price;
               final discount = lastBooking?.discountAmount ?? 0.0;
               final couponCode = lastBooking?.couponCode;
-              final code = lastBooking?.bookingCode ?? '#FT-${todayFormatted.replaceAll('-', '')}-0012';
-              final address = lastBooking?.fieldAddress ?? (isArabic ? 'مدينة نصر - شارع الطيران' : 'Nasr City - El Tayaran St');
+              final code =
+                  lastBooking?.bookingCode ??
+                  '#FT-${todayFormatted.replaceAll('-', '')}-0012';
+              final address =
+                  lastBooking?.fieldAddress ??
+                  (isArabic
+                      ? 'مدينة نصر - شارع الطيران'
+                      : 'Nasr City - El Tayaran St');
 
               return SingleChildScrollView(
                 child: Column(
@@ -187,16 +206,16 @@ ${discount > 0 ? 'الخصم المطبق ($couponCode): -${discount.toInt()} ج
                       child: Icon(
                         Icons.check_rounded,
                         size: 54.sp,
-                        color: Colors.white,
+                        color: AppColors.backgroundLight,
                       ),
                     ),
 
                     SizedBox(height: 20.h),
                     Text(
                       isArabic ? 'تم الحجز بنجاح 🎉' : 'Booking Successful! 🎉',
-                      style: AppTypography.heading2(color: Colors.white).copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: AppTypography.heading2(
+                        color: Colors.white,
+                      ).copyWith(fontWeight: FontWeight.bold),
                     ),
                     SizedBox(height: 6.h),
                     Text(
@@ -219,13 +238,25 @@ ${discount > 0 ? 'الخصم المطبق ($couponCode): -${discount.toInt()} ج
                       ),
                       child: Column(
                         children: [
-                          _buildDetailRow(isArabic ? 'الملعب' : 'Field', fieldName),
+                          _buildDetailRow(
+                            isArabic ? 'الملعب' : 'Field',
+                            fieldName,
+                          ),
                           const Divider(color: Colors.white10),
-                          _buildDetailRow(isArabic ? 'العنوان' : 'Address', address),
+                          _buildDetailRow(
+                            isArabic ? 'العنوان' : 'Address',
+                            address,
+                          ),
                           const Divider(color: Colors.white10),
-                          _buildDetailRow(isArabic ? 'تاريخ الحجز' : 'Date', date),
+                          _buildDetailRow(
+                            isArabic ? 'تاريخ الحجز' : 'Date',
+                            date,
+                          ),
                           const Divider(color: Colors.white10),
-                          _buildDetailRow(isArabic ? 'توقيت المباراة' : 'Time', time),
+                          _buildDetailRow(
+                            isArabic ? 'توقيت المباراة' : 'Time',
+                            time,
+                          ),
                           const Divider(color: Colors.white10),
                           if (discount > 0) ...[
                             _buildDetailRow(
@@ -234,7 +265,9 @@ ${discount > 0 ? 'الخصم المطبق ($couponCode): -${discount.toInt()} ج
                             ),
                             const Divider(color: Colors.white10),
                             _buildDetailRow(
-                              isArabic ? 'خصم الكوبون ($couponCode)' : 'Coupon Discount ($couponCode)',
+                              isArabic
+                                  ? 'خصم الكوبون ($couponCode)'
+                                  : 'Coupon Discount ($couponCode)',
                               '-${discount.toInt()} ج.م',
                               valueColor: AppColors.success,
                             ),
@@ -244,11 +277,19 @@ ${discount > 0 ? 'الخصم المطبق ($couponCode): -${discount.toInt()} ج
                             isArabic ? 'المبلغ المدفوع' : 'Total Paid',
                             price <= 0
                                 ? (isArabic ? 'مجاناً 🎉' : 'FREE 🎉')
-                                : (isArabic ? '${price.toInt()} جنيه' : '${price.toInt()} EGP'),
-                            valueColor: price <= 0 ? AppColors.success : AppColors.primary,
+                                : (isArabic
+                                      ? '${price.toInt()} جنيه'
+                                      : '${price.toInt()} EGP'),
+                            valueColor: price <= 0
+                                ? AppColors.success
+                                : AppColors.primary,
                           ),
                           const Divider(color: Colors.white10),
-                          _buildDetailRow(isArabic ? 'كود الحجز' : 'Booking Code', code, isCode: true),
+                          _buildDetailRow(
+                            isArabic ? 'كود الحجز' : 'Booking Code',
+                            code,
+                            isCode: true,
+                          ),
 
                           SizedBox(height: 16.h),
 
@@ -261,15 +302,19 @@ ${discount > 0 ? 'الخصم المطبق ($couponCode): -${discount.toInt()} ج
                             ),
                             child: Column(
                               children: [
-                                Icon(Icons.qr_code_2, size: 100.sp, color: Colors.black),
+                                Icon(
+                                  Icons.qr_code_2,
+                                  size: 100.sp,
+                                  color: Colors.black,
+                                ),
                                 SizedBox(height: 4.h),
                                 Text(
                                   isArabic
                                       ? 'أبرز هذا الكود لإدارة الملعب عند الدخول'
                                       : 'Show this code to stadium management at entry',
-                                  style: AppTypography.small(color: Colors.black87).copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                                  style: AppTypography.small(
+                                    color: Colors.black87,
+                                  ).copyWith(fontWeight: FontWeight.bold),
                                   textAlign: TextAlign.center,
                                 ),
                               ],
@@ -288,14 +333,25 @@ ${discount > 0 ? 'الخصم المطبق ($couponCode): -${discount.toInt()} ج
                           child: OutlinedButton.icon(
                             onPressed: () => _openGoogleMaps(context, address),
                             style: OutlinedButton.styleFrom(
-                              side: const BorderSide(color: AppColors.primary, width: 1.5),
+                              side: const BorderSide(
+                                color: AppColors.primary,
+                                width: 1.5,
+                              ),
                               padding: EdgeInsets.symmetric(vertical: 12.h),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14.r)),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14.r),
+                              ),
                             ),
-                            icon: Icon(Icons.directions, size: 18.sp, color: AppColors.primary),
+                            icon: Icon(
+                              Icons.directions,
+                              size: 18.sp,
+                              color: AppColors.primary,
+                            ),
                             label: Text(
                               isArabic ? 'الاتجاهات للملعب' : 'Directions',
-                              style: AppTypography.caption(color: AppColors.primary),
+                              style: AppTypography.caption(
+                                color: AppColors.primary,
+                              ),
                             ),
                           ),
                         ),
@@ -316,11 +372,20 @@ ${discount > 0 ? 'الخصم المطبق ($couponCode): -${discount.toInt()} ج
                               isArabic: isArabic,
                             ),
                             style: OutlinedButton.styleFrom(
-                              side: const BorderSide(color: Colors.white38, width: 1.5),
+                              side: const BorderSide(
+                                color: Colors.white38,
+                                width: 1.5,
+                              ),
                               padding: EdgeInsets.symmetric(vertical: 12.h),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14.r)),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14.r),
+                              ),
                             ),
-                            icon: Icon(Icons.download_rounded, size: 18.sp, color: Colors.white),
+                            icon: Icon(
+                              Icons.download_rounded,
+                              size: 18.sp,
+                              color: Colors.white,
+                            ),
                             label: Text(
                               isArabic ? 'تحميل الفاتورة' : 'Invoice Ticket',
                               style: AppTypography.caption(color: Colors.white),
@@ -334,16 +399,22 @@ ${discount > 0 ? 'الخصم المطبق ($couponCode): -${discount.toInt()} ج
 
                     // Navigation to My Bookings Tab (index 1)
                     PrimaryButton(
-                      title: isArabic ? 'عرض في قائمة حجوزاتي' : 'View My Bookings',
-                      onPressed: () => context.go('/main', extra: {'initialIndex': 1}),
+                      title: isArabic
+                          ? 'عرض في قائمة حجوزاتي'
+                          : 'View My Bookings',
+                      onPressed: () =>
+                          context.pushReplacementNamed(AppRouter.appSectionName, extra: 1),
                     ),
                     SizedBox(height: 12.h),
 
                     // Back to Home Tab (index 0)
                     SecondaryOutlinedButton(
-                      title: isArabic ? 'العودة للصفحة الرئيسية' : 'Back to Home',
+                      title: isArabic
+                          ? 'العودة للصفحة الرئيسية'
+                          : 'Back to Home',
                       borderColor: Colors.white54,
-                      onPressed: () => context.go('/main', extra: {'initialIndex': 0}),
+                      onPressed: () =>
+                          context.pushReplacementNamed(AppRouter.appSectionName),
                     ),
                     SizedBox(height: 20.h),
                   ],
@@ -362,7 +433,8 @@ ${discount > 0 ? 'الخصم المطبق ($couponCode): -${discount.toInt()} ج
     bool isCode = false,
     Color? valueColor,
   }) {
-    final finalColor = valueColor ?? (isCode ? AppColors.primary : Colors.white);
+    final finalColor =
+        valueColor ?? (isCode ? AppColors.primary : Colors.white);
 
     return Padding(
       padding: EdgeInsets.symmetric(vertical: 6.h),
@@ -370,10 +442,7 @@ ${discount > 0 ? 'الخصم المطبق ($couponCode): -${discount.toInt()} ج
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: AppTypography.caption(color: Colors.white70),
-          ),
+          Text(label, style: AppTypography.caption(color: Colors.white70)),
           SizedBox(width: 12.w),
           Expanded(
             child: Text(
@@ -381,9 +450,7 @@ ${discount > 0 ? 'الخصم المطبق ($couponCode): -${discount.toInt()} ج
               textAlign: TextAlign.end,
               style: AppTypography.body(
                 color: finalColor,
-              ).copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              ).copyWith(fontWeight: FontWeight.bold),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),

@@ -5,10 +5,12 @@ import 'package:field_time/features/home/data/models/field_filter_params.dart';
 import 'package:field_time/features/field_details/data/models/review_model.dart';
 
 class FieldRepository {
-  final SupabaseClient _supabase;
+  final SupabaseClient? _customSupabase;
 
   FieldRepository([SupabaseClient? supabase])
-      : _supabase = supabase ?? Supabase.instance.client;
+      : _customSupabase = supabase;
+
+  SupabaseClient get _supabase => _customSupabase ?? Supabase.instance.client;
 
   static const List<OfferModel> _mockOffers = [
     OfferModel(
@@ -68,6 +70,8 @@ class FieldRepository {
       isRecommended: true,
       isAvailableToday: true,
       phone: '01012345678',
+      couponCode: 'FIELD20',
+      couponTag: 'خصم 20% بكود FIELD20',
     ),
     FieldModel(
       id: 'field-2',
@@ -95,6 +99,8 @@ class FieldRepository {
       isRecommended: false,
       isAvailableToday: true,
       phone: '01123456789',
+      couponCode: 'OFFER50',
+      couponTag: 'خصم 50 ج.م بكود OFFER50',
     ),
     FieldModel(
       id: 'field-3',
@@ -121,6 +127,8 @@ class FieldRepository {
       isRecommended: true,
       isAvailableToday: true,
       phone: '01234567890',
+      couponCode: 'WELCOME100',
+      couponTag: 'خصم 100 ج.م بكود WELCOME100',
     ),
     FieldModel(
       id: 'field-4',
@@ -147,6 +155,8 @@ class FieldRepository {
       isRecommended: true,
       isAvailableToday: true,
       phone: '01512345678',
+      couponCode: 'FIELD20',
+      couponTag: 'خصم 20% بكود FIELD20',
     ),
     FieldModel(
       id: 'field-5',

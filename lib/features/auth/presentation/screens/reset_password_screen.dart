@@ -23,13 +23,16 @@ class ResetPasswordScreen extends StatefulWidget {
 
 class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   AuthCubit get cubit => widget.authCubit ?? context.read<AuthCubit>();
-  final formKey = GlobalKey<FormState>();
+  late final GlobalKey<FormState> formKey;
   late final TextEditingController newPasswordController;
   late final TextEditingController confirmPasswordController;
+  bool _obscureNewPassword = true;
+  bool _obscureConfirmPassword = true;
 
   @override
   void initState() {
     super.initState();
+    formKey = GlobalKey<FormState>();
     newPasswordController = TextEditingController();
     confirmPasswordController = TextEditingController();
   }
@@ -66,6 +69,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
             AppDialogs.showLoadingDialog(context, title: 'جار إعادة تعيين كلمة المرور...');
           }
           if (state is AuthSuccess) {
+            context.pop(); // Close loading dialog
             context.pushNamed(AppRouter.successfulResetPasswordName);
           }
           if (state is AuthError) {
@@ -89,7 +93,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
           child: Column(
             children: [
               Text(
-                "يرجى إدخال عنوان البريد الإلكتروني الذي استخدمته عند إنشاء حسابك",
+                "يرجى إدخال كلمة المرور الجديدة لتأكيد إعادة التعيين",
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 18.sp,
@@ -113,8 +117,25 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                     ),
                     SizedBox(height: size.height * 0.01),
                     CustomTextField(
-                      isPassword: true,
+                      isPassword: _obscureNewPassword,
                       controller: newPasswordController,
+                      prefixIcon: const Icon(
+                        Icons.lock_outline,
+                        color: AppColors.iconGrey,
+                      ),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _obscureNewPassword
+                              ? Icons.visibility_off_outlined
+                              : Icons.visibility_outlined,
+                          color: AppColors.iconGrey,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _obscureNewPassword = !_obscureNewPassword;
+                          });
+                        },
+                      ),
                       validator: Validator.validatePassword,
                       hintText: "أدخل كلمة المرور الجديدة",
                     ),
@@ -129,8 +150,25 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                     ),
                     SizedBox(height: size.height * 0.01),
                     CustomTextField(
-                      isPassword: true,
+                      isPassword: _obscureConfirmPassword,
                       controller: confirmPasswordController,
+                      prefixIcon: const Icon(
+                        Icons.lock_outline,
+                        color: AppColors.iconGrey,
+                      ),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _obscureConfirmPassword
+                              ? Icons.visibility_off_outlined
+                              : Icons.visibility_outlined,
+                          color: AppColors.iconGrey,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _obscureConfirmPassword = !_obscureConfirmPassword;
+                          });
+                        },
+                      ),
                       validator: (value) => Validator.validateConfirmPassword(
                         value,
                         newPasswordController.text.trim(),
@@ -142,7 +180,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                       title: "إعادة تعيين كلمة المرور",
                       onPressed: () async {
                         if (formKey.currentState!.validate()) {
-                          await cubit.resetPassword(
+                          await cubit.confirmPasswordReset(
                             newPasswordController.text.trim(),
                           );
                         }

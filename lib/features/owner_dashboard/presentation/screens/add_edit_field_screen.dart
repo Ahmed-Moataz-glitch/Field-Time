@@ -13,42 +13,39 @@ import 'package:field_time/features/owner_dashboard/data/repositories/owner_repo
 import 'package:field_time/features/owner_dashboard/presentation/cubit/owner_dashboard_cubit.dart';
 
 class AddEditFieldScreen extends StatelessWidget {
+  final OwnerDashboardCubit? ownerDashboardCubit;
   final String? fieldId;
 
-  const AddEditFieldScreen({
-    super.key,
-    this.fieldId,
-  });
+  const AddEditFieldScreen({super.key, this.ownerDashboardCubit, this.fieldId});
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => OwnerDashboardCubit(OwnerRepository())..loadDashboardData(),
-      child: _AddEditFieldView(fieldId: fieldId),
-    );
+    return _AddEditFieldView(ownerDashboardCubit: ownerDashboardCubit, fieldId: fieldId);
   }
 }
 
 class _AddEditFieldView extends StatefulWidget {
+  final OwnerDashboardCubit? ownerDashboardCubit;
   final String? fieldId;
 
-  const _AddEditFieldView({this.fieldId});
+  const _AddEditFieldView({this.ownerDashboardCubit, this.fieldId});
 
   @override
   State<_AddEditFieldView> createState() => _AddEditFieldViewState();
 }
 
 class _AddEditFieldViewState extends State<_AddEditFieldView> {
-  final _formKey = GlobalKey<FormState>();
+  OwnerDashboardCubit get _cubit =>
+      widget.ownerDashboardCubit ?? context.read<OwnerDashboardCubit>();
 
-  final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _descController = TextEditingController();
-  final TextEditingController _areaController = TextEditingController();
-  final TextEditingController _addressController = TextEditingController();
-  final TextEditingController _priceController = TextEditingController();
-  final TextEditingController _oldPriceController = TextEditingController();
-  final TextEditingController _phoneController = TextEditingController();
-
+  late final GlobalKey<FormState> _formKey;
+  late final TextEditingController _nameController;
+  late final TextEditingController _descController;
+  late final TextEditingController _areaController;
+  late final TextEditingController _addressController;
+  late final TextEditingController _priceController;
+  late final TextEditingController _oldPriceController;
+  late final TextEditingController _phoneController;
   final ImagePickerService _pickerService = ImagePickerService();
 
   String _selectedCity = 'القاهرة';
@@ -57,7 +54,13 @@ class _AddEditFieldViewState extends State<_AddEditFieldView> {
   bool _isIndoor = false;
   bool _isLoading = false;
 
-  final List<String> _cities = const ['القاهرة', 'الجيزة', 'الإسكندرية', 'الشرقية', 'المنصورة'];
+  final List<String> _cities = const [
+    'القاهرة',
+    'الجيزة',
+    'الإسكندرية',
+    'الشرقية',
+    'المنصورة',
+  ];
   final List<String> _fieldTypes = const ['خماسي', 'سباعي', '11v11', 'صالات'];
   final List<String> _grassTypes = const ['عشب صناعي', 'ترتان', 'عشب طبيعي'];
 
@@ -71,22 +74,33 @@ class _AddEditFieldViewState extends State<_AddEditFieldView> {
     'مدرجات',
   ];
 
-  final List<String> _selectedFacilities = ['إضاءة ليلية', 'مواقف سيارات', 'دورات مياه'];
+  final List<String> _selectedFacilities = [
+    'إضاءة ليلية',
+    'مواقف سيارات',
+    'دورات مياه',
+  ];
   final List<String> _images = [
-    'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&q=80&w=800'
+    'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&q=80&w=800',
   ];
 
   @override
   void initState() {
     super.initState();
+    _formKey = GlobalKey<FormState>();
+    _nameController = TextEditingController();
+    _addressController = TextEditingController();
+    _areaController = TextEditingController();
+    _oldPriceController = TextEditingController();
+    _phoneController = TextEditingController();
+    _priceController = TextEditingController();
+    _descController = TextEditingController();
     if (widget.fieldId != null) {
       _loadExistingField();
     }
   }
 
   void _loadExistingField() async {
-    final repo = OwnerRepository();
-    final fields = await repo.getOwnerFields();
+    final fields = await OwnerRepository().getOwnerFields();
     final field = fields.firstWhere(
       (f) => f.id == widget.fieldId,
       orElse: () => fields.first,
@@ -121,6 +135,7 @@ class _AddEditFieldViewState extends State<_AddEditFieldView> {
 
   @override
   void dispose() {
+    _formKey.currentState?.dispose();
     _nameController.dispose();
     _descController.dispose();
     _areaController.dispose();
@@ -165,18 +180,19 @@ class _AddEditFieldViewState extends State<_AddEditFieldView> {
       fieldType: _selectedFieldType,
       grassType: _selectedGrassType,
       isIndoor: _isIndoor,
-      mainImage: _images.isNotEmpty ? _images.first : 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&q=80&w=800',
+      mainImage: _images.isNotEmpty
+          ? _images.first
+          : 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&q=80&w=800',
       images: _images,
       facilities: _selectedFacilities,
       isAvailableToday: true,
       phone: _phoneController.text.trim(),
     );
 
-    final cubit = context.read<OwnerDashboardCubit>();
     if (widget.fieldId == null) {
-      await cubit.addField(fieldModel);
+      await _cubit.addField(fieldModel);
     } else {
-      await cubit.updateField(fieldModel);
+      await _cubit.updateField(fieldModel);
     }
 
     setState(() => _isLoading = false);
@@ -196,7 +212,9 @@ class _AddEditFieldViewState extends State<_AddEditFieldView> {
         title: Text(
           isEdit ? 'تعديل بيانات الملعب' : 'إضافة ملعب جديد',
           style: AppTypography.heading3(
-            color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+            color: isDark
+                ? AppColors.textPrimaryDark
+                : AppColors.textPrimaryLight,
           ),
         ),
         centerTitle: true,
@@ -218,7 +236,9 @@ class _AddEditFieldViewState extends State<_AddEditFieldView> {
                 Text(
                   'المعلومات الأساسية',
                   style: AppTypography.title(
-                    color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                    color: isDark
+                        ? AppColors.textPrimaryDark
+                        : AppColors.textPrimaryLight,
                   ).copyWith(fontWeight: FontWeight.bold),
                 ),
                 SizedBox(height: 14.h),
@@ -226,7 +246,9 @@ class _AddEditFieldViewState extends State<_AddEditFieldView> {
                   controller: _nameController,
                   hintText: 'اسم الملعب (مثال: أرينا سبورت)',
                   prefixIcon: const Icon(Icons.sports_soccer_outlined),
-                  validator: (val) => val == null || val.isEmpty ? 'يرجى إدخال اسم الملعب' : null,
+                  validator: (val) => val == null || val.isEmpty
+                      ? 'يرجى إدخال اسم الملعب'
+                      : null,
                 ),
                 SizedBox(height: 12.h),
                 CustomTextField(
@@ -241,7 +263,9 @@ class _AddEditFieldViewState extends State<_AddEditFieldView> {
                 Text(
                   'الموقع والمدينة',
                   style: AppTypography.title(
-                    color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                    color: isDark
+                        ? AppColors.textPrimaryDark
+                        : AppColors.textPrimaryLight,
                   ).copyWith(fontWeight: FontWeight.bold),
                 ),
                 SizedBox(height: 14.h),
@@ -249,8 +273,13 @@ class _AddEditFieldViewState extends State<_AddEditFieldView> {
                   initialValue: _selectedCity,
                   decoration: InputDecoration(
                     filled: true,
-                    fillColor: isDark ? AppColors.cardDark : AppColors.greyLight,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(16.r), borderSide: BorderSide.none),
+                    fillColor: isDark
+                        ? AppColors.cardDark
+                        : AppColors.greyLight,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16.r),
+                      borderSide: BorderSide.none,
+                    ),
                     prefixIcon: const Icon(Icons.location_city_outlined),
                   ),
                   items: _cities.map((city) {
@@ -285,7 +314,8 @@ class _AddEditFieldViewState extends State<_AddEditFieldView> {
                   controller: _addressController,
                   hintText: 'العنوان التفصيلي (شارع الطيران...)',
                   prefixIcon: const Icon(Icons.place_outlined),
-                  validator: (val) => val == null || val.isEmpty ? 'يرجى إدخال العنوان' : null,
+                  validator: (val) =>
+                      val == null || val.isEmpty ? 'يرجى إدخال العنوان' : null,
                 ),
 
                 SizedBox(height: 24.h),
@@ -294,7 +324,9 @@ class _AddEditFieldViewState extends State<_AddEditFieldView> {
                 Text(
                   'الأسعار ونوع الملعب',
                   style: AppTypography.title(
-                    color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                    color: isDark
+                        ? AppColors.textPrimaryDark
+                        : AppColors.textPrimaryLight,
                   ).copyWith(fontWeight: FontWeight.bold),
                 ),
                 SizedBox(height: 14.h),
@@ -307,7 +339,8 @@ class _AddEditFieldViewState extends State<_AddEditFieldView> {
                         hintText: 'السعر / ساعة (ج.م)',
                         keyboardType: TextInputType.number,
                         prefixIcon: const Icon(Icons.attach_money_outlined),
-                        validator: (val) => val == null || val.isEmpty ? 'إلزامي' : null,
+                        validator: (val) =>
+                            val == null || val.isEmpty ? 'إلزامي' : null,
                       ),
                     ),
                     SizedBox(width: 10.w),
@@ -323,7 +356,12 @@ class _AddEditFieldViewState extends State<_AddEditFieldView> {
                 ),
 
                 SizedBox(height: 16.h),
-                Text('نوع الملعب:', style: AppTypography.caption(color: AppColors.textSecondaryLight)),
+                Text(
+                  'نوع الملعب:',
+                  style: AppTypography.caption(
+                    color: AppColors.textSecondaryLight,
+                  ),
+                ),
                 SizedBox(height: 8.h),
                 Wrap(
                   spacing: 8.w,
@@ -333,14 +371,22 @@ class _AddEditFieldViewState extends State<_AddEditFieldView> {
                       label: Text(type),
                       selected: isSelected,
                       selectedColor: AppColors.primary,
-                      labelStyle: TextStyle(color: isSelected ? Colors.white : null),
-                      onSelected: (val) => setState(() => _selectedFieldType = type),
+                      labelStyle: TextStyle(
+                        color: isSelected ? Colors.white : null,
+                      ),
+                      onSelected: (val) =>
+                          setState(() => _selectedFieldType = type),
                     );
                   }).toList(),
                 ),
 
                 SizedBox(height: 14.h),
-                Text('نوع الأرضية:', style: AppTypography.caption(color: AppColors.textSecondaryLight)),
+                Text(
+                  'نوع الأرضية:',
+                  style: AppTypography.caption(
+                    color: AppColors.textSecondaryLight,
+                  ),
+                ),
                 SizedBox(height: 8.h),
                 Wrap(
                   spacing: 8.w,
@@ -350,8 +396,11 @@ class _AddEditFieldViewState extends State<_AddEditFieldView> {
                       label: Text(grass),
                       selected: isSelected,
                       selectedColor: AppColors.primary,
-                      labelStyle: TextStyle(color: isSelected ? Colors.white : null),
-                      onSelected: (val) => setState(() => _selectedGrassType = grass),
+                      labelStyle: TextStyle(
+                        color: isSelected ? Colors.white : null,
+                      ),
+                      onSelected: (val) =>
+                          setState(() => _selectedGrassType = grass),
                     );
                   }).toList(),
                 ),
@@ -359,7 +408,14 @@ class _AddEditFieldViewState extends State<_AddEditFieldView> {
                 SizedBox(height: 14.h),
                 SwitchListTile.adaptive(
                   contentPadding: EdgeInsets.zero,
-                  title: Text('هل الملعب مغطى / صالة؟', style: AppTypography.body(color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight)),
+                  title: Text(
+                    'هل الملعب مغطى / صالة؟',
+                    style: AppTypography.body(
+                      color: isDark
+                          ? AppColors.textPrimaryDark
+                          : AppColors.textPrimaryLight,
+                    ),
+                  ),
                   value: _isIndoor,
                   activeTrackColor: AppColors.primary,
                   onChanged: (val) => setState(() => _isIndoor = val),
@@ -371,7 +427,9 @@ class _AddEditFieldViewState extends State<_AddEditFieldView> {
                 Text(
                   'المرافق والخدمات',
                   style: AppTypography.title(
-                    color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                    color: isDark
+                        ? AppColors.textPrimaryDark
+                        : AppColors.textPrimaryLight,
                   ).copyWith(fontWeight: FontWeight.bold),
                 ),
                 SizedBox(height: 12.h),
@@ -404,7 +462,9 @@ class _AddEditFieldViewState extends State<_AddEditFieldView> {
                 Text(
                   'صور الملعب',
                   style: AppTypography.title(
-                    color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                    color: isDark
+                        ? AppColors.textPrimaryDark
+                        : AppColors.textPrimaryLight,
                   ).copyWith(fontWeight: FontWeight.bold),
                 ),
                 SizedBox(height: 12.h),
@@ -413,12 +473,22 @@ class _AddEditFieldViewState extends State<_AddEditFieldView> {
                     Expanded(
                       child: OutlinedButton.icon(
                         onPressed: _pickImageFromCamera,
-                        icon: const Icon(Icons.camera_alt_outlined, color: AppColors.primary),
-                        label: Text('الكاميرا', style: AppTypography.caption(color: AppColors.primary).copyWith(fontWeight: FontWeight.bold)),
+                        icon: const Icon(
+                          Icons.camera_alt_outlined,
+                          color: AppColors.primary,
+                        ),
+                        label: Text(
+                          'الكاميرا',
+                          style: AppTypography.caption(
+                            color: AppColors.primary,
+                          ).copyWith(fontWeight: FontWeight.bold),
+                        ),
                         style: OutlinedButton.styleFrom(
                           padding: EdgeInsets.symmetric(vertical: 12.h),
                           side: const BorderSide(color: AppColors.primary),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14.r)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14.r),
+                          ),
                         ),
                       ),
                     ),
@@ -426,12 +496,22 @@ class _AddEditFieldViewState extends State<_AddEditFieldView> {
                     Expanded(
                       child: ElevatedButton.icon(
                         onPressed: _pickImagesFromGallery,
-                        icon: const Icon(Icons.photo_library_outlined, color: Colors.white),
-                        label: Text('معرض الصور', style: AppTypography.caption(color: Colors.white).copyWith(fontWeight: FontWeight.bold)),
+                        icon: const Icon(
+                          Icons.photo_library_outlined,
+                          color: Colors.white,
+                        ),
+                        label: Text(
+                          'معرض الصور',
+                          style: AppTypography.caption(
+                            color: Colors.white,
+                          ).copyWith(fontWeight: FontWeight.bold),
+                        ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
                           padding: EdgeInsets.symmetric(vertical: 12.h),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14.r)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14.r),
+                          ),
                         ),
                       ),
                     ),
@@ -469,8 +549,12 @@ class _AddEditFieldViewState extends State<_AddEditFieldView> {
                               },
                               child: CircleAvatar(
                                 radius: 11.r,
-                                backgroundColor: Colors.red,
-                                child: Icon(Icons.close, size: 13.sp, color: Colors.white),
+                                backgroundColor: AppColors.error,
+                                child: Icon(
+                                  Icons.close,
+                                  size: 13.sp,
+                                  color: AppColors.backgroundLight,
+                                ),
                               ),
                             ),
                           ),

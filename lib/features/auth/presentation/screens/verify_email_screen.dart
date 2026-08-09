@@ -66,12 +66,10 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
               context,
               title: "جارٍ إرسال رمز التحقق...",
             );
-          } else {
-            Navigator.of(context, rootNavigator: true).pop();
           }
           if (state is OtpVerified) {
             context.pushReplacementNamed(
-              AppRouter.loginName,
+              AppRouter.appSectionName,
             );
           }
           if (state is VerifyingOtpError) {

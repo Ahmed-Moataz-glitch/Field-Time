@@ -1,3 +1,4 @@
+import 'package:field_time/app/router/app_router.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -6,24 +7,37 @@ import 'package:intl/intl.dart';
 import 'package:field_time/core/constants/app_colors.dart';
 import 'package:field_time/core/constants/app_typography.dart';
 import 'package:field_time/features/coupons/data/models/coupon_model.dart';
-import 'package:field_time/features/coupons/data/repositories/coupon_repository.dart';
 import 'package:field_time/features/coupons/presentation/cubit/coupon_management_cubit.dart';
 import 'package:field_time/features/coupons/presentation/cubit/coupon_management_state.dart';
 
-class ManageCouponsScreen extends StatelessWidget {
+class ManageCouponsScreen extends StatefulWidget {
   const ManageCouponsScreen({super.key});
 
   @override
+  State<ManageCouponsScreen> createState() => _ManageCouponsScreenState();
+}
+
+class _ManageCouponsScreenState extends State<ManageCouponsScreen> {
+  late final CouponManagementCubit _couponManagementCubit;
+
+  @override
+  void initState() {
+    super.initState();
+    _couponManagementCubit = context.read<CouponManagementCubit>();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _couponManagementCubit.loadCoupons();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => CouponManagementCubit(CouponRepository())..loadCoupons(),
-      child: const _ManageCouponsView(),
-    );
+    return _ManageCouponsView(_couponManagementCubit);
   }
 }
 
 class _ManageCouponsView extends StatelessWidget {
-  const _ManageCouponsView();
+  final CouponManagementCubit couponManagementCubit;
+  const _ManageCouponsView(this.couponManagementCubit);
 
   @override
   Widget build(BuildContext context) {
@@ -34,23 +48,27 @@ class _ManageCouponsView extends StatelessWidget {
         title: Text(
           'إدارة الكوبونات والعروض',
           style: AppTypography.heading3(
-            color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+            color: isDark
+                ? AppColors.textPrimaryDark
+                : AppColors.textPrimaryLight,
           ).copyWith(fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
         actions: [
           IconButton(
-            icon: Icon(Icons.add_circle_outline, color: AppColors.primary, size: 26.sp),
+            icon: Icon(
+              Icons.add_circle_outline,
+              color: AppColors.primary,
+              size: 26.sp,
+            ),
             onPressed: () async {
-              await context.push('/create-coupon').then(
-                (value) {
-                  if (context.mounted) {
-                    context.read<CouponManagementCubit>().loadCoupons();
-                  }
-                },
-              );
+              await context.pushNamed(AppRouter.createCouponName).then((value) {
+                if (context.mounted) {
+                  couponManagementCubit.loadCoupons();
+                }
+              });
               if (context.mounted) {
-                context.read<CouponManagementCubit>().loadCoupons();
+                couponManagementCubit.loadCoupons();
               }
             },
           ),
@@ -60,18 +78,28 @@ class _ManageCouponsView extends StatelessWidget {
         child: BlocBuilder<CouponManagementCubit, CouponManagementState>(
           builder: (context, state) {
             if (state is CouponManagementLoading) {
-              return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+              return const Center(
+                child: CircularProgressIndicator(color: AppColors.primary),
+              );
             } else if (state is CouponManagementError) {
               return Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.error_outline, size: 48.sp, color: AppColors.error),
+                    Icon(
+                      Icons.error_outline,
+                      size: 48.sp,
+                      color: AppColors.error,
+                    ),
                     SizedBox(height: 12.h),
-                    Text(state.message, style: AppTypography.body(color: AppColors.error)),
+                    Text(
+                      state.message,
+                      style: AppTypography.body(color: AppColors.error),
+                    ),
                     SizedBox(height: 16.h),
                     ElevatedButton(
-                      onPressed: () => context.read<CouponManagementCubit>().loadCoupons(),
+                      onPressed: () async =>
+                          await couponManagementCubit.loadCoupons(),
                       child: const Text('إعادة المحاولة'),
                     ),
                   ],
@@ -85,23 +113,38 @@ class _ManageCouponsView extends StatelessWidget {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.confirmation_number_outlined, size: 64.sp, color: AppColors.primary),
+                      Icon(
+                        Icons.confirmation_number_outlined,
+                        size: 64.sp,
+                        color: AppColors.primary,
+                      ),
                       SizedBox(height: 16.h),
-                      Text('لا توجد كوبونات حالياً', style: AppTypography.title(color: AppColors.textSecondaryLight)),
+                      Text(
+                        'لا توجد كوبونات حالياً',
+                        style: AppTypography.title(
+                          color: AppColors.textSecondaryLight,
+                        ),
+                      ),
                       SizedBox(height: 20.h),
                       ElevatedButton.icon(
                         onPressed: () async {
-                          await context.push('/create-coupon');
+                          await context.pushNamed(AppRouter.createCouponName);
                           if (context.mounted) {
-                            context.read<CouponManagementCubit>().loadCoupons();
+                            couponManagementCubit.loadCoupons();
                           }
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
-                          padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 12.h),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 20.w,
+                            vertical: 12.h,
+                          ),
                         ),
                         icon: const Icon(Icons.add, color: Colors.white),
-                        label: const Text('إنشاء أول كوبون', style: TextStyle(color: Colors.white)),
+                        label: const Text(
+                          'إنشاء أول كوبون',
+                          style: TextStyle(color: Colors.white),
+                        ),
                       ),
                     ],
                   ),
@@ -109,7 +152,8 @@ class _ManageCouponsView extends StatelessWidget {
               }
 
               return RefreshIndicator(
-                onRefresh: () => context.read<CouponManagementCubit>().loadCoupons(),
+                onRefresh: () async =>
+                    await couponManagementCubit.loadCoupons(),
                 color: AppColors.primary,
                 child: ListView.separated(
                   padding: EdgeInsets.all(20.w),
@@ -129,14 +173,17 @@ class _ManageCouponsView extends StatelessWidget {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
-          await context.push('/create-coupon');
+          await context.pushNamed(AppRouter.createCouponName);
           if (context.mounted) {
-            context.read<CouponManagementCubit>().loadCoupons();
+            couponManagementCubit.loadCoupons();
           }
         },
         backgroundColor: AppColors.primary,
         icon: const Icon(Icons.add, color: Colors.white),
-        label: const Text('كوبون جديد', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        label: const Text(
+          'كوبون جديد',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
       ),
     );
   }
@@ -192,17 +239,19 @@ class _ManageCouponsView extends StatelessWidget {
                 ),
                 child: Text(
                   coupon.code,
-                  style: AppTypography.title(color: typeColor).copyWith(
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.2,
-                  ),
+                  style: AppTypography.title(
+                    color: typeColor,
+                  ).copyWith(fontWeight: FontWeight.bold, letterSpacing: 1.2),
                 ),
               ),
               Switch.adaptive(
                 value: coupon.isActive,
                 activeTrackColor: AppColors.primary,
-                onChanged: (val) {
-                  context.read<CouponManagementCubit>().toggleCouponActive(coupon.id, val);
+                onChanged: (val) async {
+                  await couponManagementCubit.toggleCouponActive(
+                    coupon.id,
+                    val,
+                  );
                 },
               ),
             ],
@@ -214,14 +263,18 @@ class _ManageCouponsView extends StatelessWidget {
               Text(
                 'نوع العرض: $typeLabel',
                 style: AppTypography.body(
-                  color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                  color: isDark
+                      ? AppColors.textPrimaryDark
+                      : AppColors.textPrimaryLight,
                 ).copyWith(fontWeight: FontWeight.bold),
               ),
               if (coupon.minBookingAmount > 0)
                 Text(
                   'الحد الأدنى: ${coupon.minBookingAmount.toInt()} ج.م',
                   style: AppTypography.caption(
-                    color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                    color: isDark
+                        ? AppColors.textSecondaryDark
+                        : AppColors.textSecondaryLight,
                   ),
                 ),
             ],
@@ -233,7 +286,11 @@ class _ManageCouponsView extends StatelessWidget {
               Text(
                 'تاريخ الانتهاء: $expiryStr',
                 style: AppTypography.caption(
-                  color: coupon.isExpired ? AppColors.error : (isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight),
+                  color: coupon.isExpired
+                      ? AppColors.error
+                      : (isDark
+                            ? AppColors.textSecondaryDark
+                            : AppColors.textSecondaryLight),
                 ),
               ),
               Text(

@@ -1,5 +1,10 @@
+import 'package:field_time/core/services/paymob_service.dart';
 import 'package:field_time/features/coupons/data/repositories/coupon_repository.dart';
 import 'package:field_time/features/coupons/presentation/cubit/coupon_management_cubit.dart';
+import 'package:field_time/features/field_details/presentation/cubit/field_details_cubit.dart';
+import 'package:field_time/features/owner_dashboard/data/repositories/owner_repository.dart';
+import 'package:field_time/features/owner_dashboard/presentation/cubit/owner_dashboard_cubit.dart';
+import 'package:field_time/features/reviews/presentation/cubit/reviews_cubit.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -53,6 +58,7 @@ void main() async {
   await FirebaseService.init();
   await setupGetIt();
   await AppRouter.initializeRouter();
+  PaymobService.initializePayment();
 
   runApp(const FieldTimeApp());
 }
@@ -62,22 +68,29 @@ class FieldTimeApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fieldRepo = FieldRepository();
-    final bookingRepo = BookingRepository();
-    final authRepo = AuthRepository();
-    final notifRepo = NotificationRepository();
-    final couponRepo = CouponRepository();
-
     return MultiBlocProvider(
       providers: [
         BlocProvider(create: (_) => LocaleCubit()),
-        BlocProvider(create: (_) => AuthCubit(authRepo)),
-        BlocProvider(create: (_) => HomeCubit(fieldRepo)),
-        BlocProvider(create: (_) => BookingCubit(repository: bookingRepo)),
-        BlocProvider(create: (_) => ProfileCubit(authRepo)),
-        BlocProvider(create: (_) => FavoritesCubit(fieldRepo)),
-        BlocProvider(create: (_) => NotificationsCubit(notifRepo)),
-        BlocProvider(create: (_) => CouponManagementCubit(couponRepo)),
+        BlocProvider(create: (_) => getIt<AuthCubit>()),
+        BlocProvider(create: (_) => HomeCubit(getIt<FieldRepository>())),
+        BlocProvider(
+          create: (_) => BookingCubit(repository: getIt<BookingRepository>()),
+        ),
+        BlocProvider(create: (_) => ProfileCubit(getIt<AuthRepository>())),
+        BlocProvider(create: (_) => FavoritesCubit(getIt<FieldRepository>())),
+        BlocProvider(
+          create: (_) => NotificationsCubit(getIt<NotificationRepository>()),
+        ),
+        BlocProvider(
+          create: (_) => CouponManagementCubit(getIt<CouponRepository>()),
+        ),
+        BlocProvider(
+          create: (_) => OwnerDashboardCubit(getIt<OwnerRepository>()),
+        ),
+        BlocProvider(create: (_) => ReviewsCubit(getIt<FieldRepository>())),
+        BlocProvider(
+          create: (_) => FieldDetailsCubit(getIt<FieldRepository>()),
+        ),
       ],
       child: ScreenUtilInit(
         designSize: const Size(375, 812),

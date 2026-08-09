@@ -1,5 +1,5 @@
 import 'package:field_time/core/utils/secure_storage.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_auth/firebase_auth.dart' hide OAuthProvider;
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -7,8 +7,15 @@ import 'package:field_time/core/errors/failures.dart';
 import 'package:field_time/features/auth/data/models/user_model.dart';
 
 class AuthRepository {
-  final SupabaseClient _supabase = Supabase.instance.client;
-  final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
+  final SupabaseClient? _customSupabase;
+  final FirebaseAuth? _customFirebaseAuth;
+
+  AuthRepository({SupabaseClient? supabase, FirebaseAuth? firebaseAuth})
+      : _customSupabase = supabase,
+        _customFirebaseAuth = firebaseAuth;
+
+  SupabaseClient get _supabase => _customSupabase ?? Supabase.instance.client;
+  FirebaseAuth get _firebaseAuth => _customFirebaseAuth ?? FirebaseAuth.instance;
 
 
   /// Sign in with email and password using Supabase Auth and fetch profile
@@ -26,7 +33,8 @@ class AuthRepository {
       if (user == null) {
         throw const AuthFailure('لم يتم العثور على بيانات المستخدم');
       }
-      await SecureStorage.saveToken(user.aud); // Save the token for session management
+      final token = response.session?.accessToken ?? user.id;
+      await SecureStorage.saveToken(token); // Save the token for session management
       final profile = await _fetchProfile(user.id);
       return UserModel.fromSupabase(user, profile);
     } on AuthException catch (e) {
@@ -43,6 +51,29 @@ class AuthRepository {
     try {
       final gUser = await GoogleSignIn().signIn();
       final gAuth = await gUser?.authentication;
+      if (gAuth?.idToken != null) {
+        final response = await _supabase.auth.signInWithIdToken(
+          provider: OAuthProvider.google,
+          idToken: gAuth!.idToken!,
+          accessToken: gAuth.accessToken,
+        );
+        if (response.user != null) {
+          final token = response.session?.accessToken ?? response.user!.id;
+          await SecureStorage.saveToken(token);
+          // Sync profile in public.users
+          await _supabase.from('users').upsert({
+            'id': response.user!.id,
+            'full_name': response.user!.userMetadata?['full_name'] ?? gUser?.displayName ?? 'مستخدم جوجل',
+            'email': response.user!.email ?? gUser?.email ?? '',
+            'avatar_url': response.user!.userMetadata?['avatar_url'] ?? gUser?.photoUrl,
+            'role': 'user',
+            'city': 'القاهرة',
+          });
+          return true;
+        }
+      }
+
+      // Fallback Firebase Auth if Supabase Google Auth is not configured
       final credential = GoogleAuthProvider.credential(
         accessToken: gAuth?.accessToken,
         idToken: gAuth?.idToken,
@@ -50,14 +81,20 @@ class AuthRepository {
       final userCredential = await _firebaseAuth.signInWithCredential(
         credential,
       );
-      await SecureStorage.saveToken(await userCredential.user?.getIdToken() ?? ''); // Save the token for session management
-      return userCredential.user != null;
-    } catch (_) {
+      final fbUser = userCredential.user;
+      if (fbUser != null) {
+        final token = await fbUser.getIdToken() ?? fbUser.uid;
+        await SecureStorage.saveToken(token);
+        return true;
+      }
+      return false;
+    } catch (e) {
+      if (kDebugMode) print('Google Sign-In Error: $e');
       return false;
     }
   }
 
-  /// Register a new user in Supabase Auth & insert profile record in PostgreSQL
+  /// Register a new user in Supabase Auth & insert user record in PostgreSQL 'users' table
   Future<UserModel> register({
     required String fullName,
     required String email,
@@ -83,7 +120,10 @@ class AuthRepository {
         throw const AuthFailure('فشلت عملية إنشاء الحساب');
       }
 
-      // Upsert profile into PostgreSQL 'profiles' table
+      final token = response.session?.accessToken ?? user.id;
+      await SecureStorage.saveToken(token);
+
+      // Upsert profile into PostgreSQL 'users' table
       final profileMap = {
         'id': user.id,
         'full_name': fullName,
@@ -95,9 +135,9 @@ class AuthRepository {
       };
 
       try {
-        await _supabase.from('profiles').upsert(profileMap);
+        await _supabase.from('users').upsert(profileMap);
       } catch (e) {
-        if (kDebugMode) print('Profile upsert warning: $e');
+        if (kDebugMode) print('User profile upsert warning: $e');
       }
 
       return UserModel.fromSupabase(user, profileMap);
@@ -134,13 +174,16 @@ class AuthRepository {
         email: email,
         token: otp,
       );
+      if (result.session != null) {
+        await SecureStorage.saveToken(result.session!.accessToken);
+      }
       return result.session != null;
     } catch (e) {
       throw 'Error from verify OTP $e';
     }
   }
 
-  /// Request password reset via Supabase Auth
+  /// Request password reset via Supabase Auth (sends reset email/OTP)
   Future<void> resetPassword(String email) async {
     try {
       await _supabase.auth.resetPasswordForEmail(email);
@@ -151,7 +194,18 @@ class AuthRepository {
     }
   }
 
-  /// Get current session user from Supabase Auth & profiles table
+  /// Update password for the user session (Confirm Reset Password)
+  Future<void> confirmPasswordReset({required String newPassword}) async {
+    try {
+      await _supabase.auth.updateUser(UserAttributes(password: newPassword));
+    } on AuthException catch (e) {
+      throw AuthFailure(_mapAuthExceptionMessage(e.message));
+    } catch (e) {
+      throw const AuthFailure('فشل إعادة تعيين كلمة المرور');
+    }
+  }
+
+  /// Get current session user from Supabase Auth & users table
   Future<UserModel?> getCurrentUser() async {
     try {
       final user = _supabase.auth.currentUser;
@@ -165,11 +219,11 @@ class AuthRepository {
     }
   }
 
-  /// Helper to fetch user profile row from Supabase PostgreSQL database
+  /// Helper to fetch user profile row from Supabase PostgreSQL 'users' table
   Future<Map<String, dynamic>?> _fetchProfile(String userId) async {
     try {
       final data = await _supabase
-          .from('profiles')
+          .from('users')
           .select()
           .eq('id', userId)
           .maybeSingle();
@@ -194,7 +248,7 @@ class AuthRepository {
         await _supabase.auth.updateUser(UserAttributes(
           data: {'full_name': fullName, 'phone': phone, 'city': city},
         ));
-        await _supabase.from('profiles').upsert({
+        await _supabase.from('users').upsert({
           'id': user.id,
           'full_name': fullName,
           'phone': phone,
@@ -232,7 +286,7 @@ class AuthRepository {
         await _supabase.auth.updateUser(UserAttributes(
           data: {'avatar_url': avatarUrl},
         ));
-        await _supabase.from('profiles').upsert({
+        await _supabase.from('users').upsert({
           'id': user.id,
           'avatar_url': avatarUrl,
         });
@@ -278,9 +332,10 @@ class AuthRepository {
     required String password,
   }) => loginWithEmailAndPassword(email: email, password: password);
 
-  /// Sign out current Supabase auth session
+  /// Sign out current Supabase auth session and clear stored tokens
   Future<void> logout() async {
     try {
+      await SecureStorage.deleteToken();
       await _supabase.auth.signOut();
     } on AuthException catch (e) {
       throw AuthFailure(e.message);

@@ -25,6 +25,8 @@ class FieldModel extends Equatable {
   final String? openingTime;
   final String? closingTime;
   final String? phone;
+  final String? couponCode;
+  final String? couponTag;
 
   const FieldModel({
     required this.id,
@@ -51,6 +53,8 @@ class FieldModel extends Equatable {
     this.openingTime,
     this.closingTime,
     this.phone,
+    this.couponCode,
+    this.couponTag,
   });
 
   factory FieldModel.fromJson(Map<String, dynamic> json) {
@@ -93,6 +97,8 @@ class FieldModel extends Equatable {
       openingTime: json['opening_time'] as String?,
       closingTime: json['closing_time'] as String?,
       phone: json['phone'] as String?,
+      couponCode: json['coupon_code'] as String?,
+      couponTag: json['coupon_tag'] as String?,
     );
   }
 
@@ -122,6 +128,8 @@ class FieldModel extends Equatable {
       'opening_time': openingTime,
       'closing_time': closingTime,
       'phone': phone,
+      'coupon_code': couponCode,
+      'coupon_tag': couponTag,
     };
   }
 
@@ -150,6 +158,8 @@ class FieldModel extends Equatable {
     String? openingTime,
     String? closingTime,
     String? phone,
+    String? couponCode,
+    String? couponTag,
   }) {
     return FieldModel(
       id: id ?? this.id,
@@ -176,6 +186,8 @@ class FieldModel extends Equatable {
       openingTime: openingTime ?? this.openingTime,
       closingTime: closingTime ?? this.closingTime,
       phone: phone ?? this.phone,
+      couponCode: couponCode ?? this.couponCode,
+      couponTag: couponTag ?? this.couponTag,
     );
   }
 
@@ -205,5 +217,7 @@ class FieldModel extends Equatable {
         openingTime,
         closingTime,
         phone,
+        couponCode,
+        couponTag,
       ];
 }

@@ -4,10 +4,12 @@ import 'package:field_time/core/errors/failures.dart';
 import 'package:field_time/features/coupons/data/models/coupon_model.dart';
 
 class CouponRepository {
-  final SupabaseClient _supabase;
+  final SupabaseClient? _customSupabase;
 
   CouponRepository([SupabaseClient? supabase])
-      : _supabase = supabase ?? Supabase.instance.client;
+      : _customSupabase = supabase;
+
+  SupabaseClient get _supabase => _customSupabase ?? Supabase.instance.client;
 
   static final List<CouponModel> _mockCoupons = [
     CouponModel(

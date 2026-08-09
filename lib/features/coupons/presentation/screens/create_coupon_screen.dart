@@ -18,19 +18,31 @@ class CreateCouponScreen extends StatefulWidget {
 }
 
 class _CreateCouponScreenState extends State<CreateCouponScreen> {
-  final _formKey = GlobalKey<FormState>();
-
-  final TextEditingController _codeController = TextEditingController();
-  final TextEditingController _valueController = TextEditingController();
-  final TextEditingController _minAmountController = TextEditingController(text: '0');
-  final TextEditingController _limitController = TextEditingController();
+  late final CouponManagementCubit _couponManagementCubit;
+  late final GlobalKey<FormState> _formKey;
+  late final TextEditingController _codeController;
+  late final TextEditingController _valueController;
+  late final TextEditingController _minAmountController;
+  late final TextEditingController _limitController;
 
   String _selectedType = 'fixed'; // 'fixed', 'percentage', 'free'
   DateTime _expiresAt = DateTime.now().add(const Duration(days: 30));
   bool _isLoading = false;
 
   @override
+  void initState() {
+    super.initState();
+    _couponManagementCubit = context.read<CouponManagementCubit>();
+    _formKey = GlobalKey<FormState>();
+    _codeController = TextEditingController();
+    _valueController = TextEditingController();
+    _minAmountController = TextEditingController(text: '0');
+    _limitController = TextEditingController();
+  }
+
+  @override
   void dispose() {
+    _formKey.currentState?.dispose();
     _codeController.dispose();
     _valueController.dispose();
     _minAmountController.dispose();
@@ -49,8 +61,10 @@ class _CreateCouponScreenState extends State<CreateCouponScreen> {
           data: Theme.of(context).copyWith(
             colorScheme: ColorScheme.light(
               primary: AppColors.primary,
-              onPrimary: Colors.white,
-              onSurface: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
+              onPrimary: AppColors.backgroundLight,
+              onSurface: Theme.of(context).brightness == Brightness.dark
+                  ? AppColors.backgroundLight
+                  : AppColors.surfaceDark,
             ),
           ),
           child: child!,
@@ -72,17 +86,18 @@ class _CreateCouponScreenState extends State<CreateCouponScreen> {
     final double value = _selectedType == 'free'
         ? 100.0
         : (double.tryParse(_valueController.text.trim()) ?? 0.0);
-    final double minAmount = double.tryParse(_minAmountController.text.trim()) ?? 0.0;
+    final double minAmount =
+        double.tryParse(_minAmountController.text.trim()) ?? 0.0;
     final int? limit = int.tryParse(_limitController.text.trim());
 
-    final result = await context.read<CouponManagementCubit>().createCoupon(
-          code: code,
-          discountType: _selectedType,
-          discountValue: value,
-          minBookingAmount: minAmount,
-          expiresAt: _expiresAt,
-          usageLimit: limit,
-        );
+    final result = await _couponManagementCubit.createCoupon(
+      code: code,
+      discountType: _selectedType,
+      discountValue: value,
+      minBookingAmount: minAmount,
+      expiresAt: _expiresAt,
+      usageLimit: limit,
+    );
 
     setState(() => _isLoading = false);
 
@@ -106,7 +121,9 @@ class _CreateCouponScreenState extends State<CreateCouponScreen> {
         title: Text(
           'إنشاء كوبون جديد',
           style: AppTypography.heading3(
-            color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+            color: isDark
+                ? AppColors.textPrimaryDark
+                : AppColors.textPrimaryLight,
           ).copyWith(fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
@@ -139,7 +156,9 @@ class _CreateCouponScreenState extends State<CreateCouponScreen> {
                   Text(
                     'رمز الكوبون (Promo Code)',
                     style: AppTypography.title(
-                      color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                      color: isDark
+                          ? AppColors.textPrimaryDark
+                          : AppColors.textPrimaryLight,
                     ).copyWith(fontWeight: FontWeight.bold),
                   ),
                   SizedBox(height: 10.h),
@@ -164,7 +183,9 @@ class _CreateCouponScreenState extends State<CreateCouponScreen> {
                   Text(
                     'نوع الخصم',
                     style: AppTypography.title(
-                      color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                      color: isDark
+                          ? AppColors.textPrimaryDark
+                          : AppColors.textPrimaryLight,
                     ).copyWith(fontWeight: FontWeight.bold),
                   ),
                   SizedBox(height: 10.h),
@@ -175,22 +196,33 @@ class _CreateCouponScreenState extends State<CreateCouponScreen> {
                         label: const Text('مبلغ ثابت (ج.م)'),
                         selected: _selectedType == 'fixed',
                         selectedColor: AppColors.primary,
-                        labelStyle: TextStyle(color: _selectedType == 'fixed' ? Colors.white : null),
-                        onSelected: (val) => setState(() => _selectedType = 'fixed'),
+                        labelStyle: TextStyle(
+                          color: _selectedType == 'fixed' ? Colors.white : null,
+                        ),
+                        onSelected: (val) =>
+                            setState(() => _selectedType = 'fixed'),
                       ),
                       ChoiceChip(
                         label: const Text('نسبة مئوية (%)'),
                         selected: _selectedType == 'percentage',
                         selectedColor: AppColors.primary,
-                        labelStyle: TextStyle(color: _selectedType == 'percentage' ? Colors.white : null),
-                        onSelected: (val) => setState(() => _selectedType = 'percentage'),
+                        labelStyle: TextStyle(
+                          color: _selectedType == 'percentage'
+                              ? Colors.white
+                              : null,
+                        ),
+                        onSelected: (val) =>
+                            setState(() => _selectedType = 'percentage'),
                       ),
                       ChoiceChip(
                         label: const Text('حجز مجاني (100%) 🎉'),
                         selected: _selectedType == 'free',
                         selectedColor: AppColors.success,
-                        labelStyle: TextStyle(color: _selectedType == 'free' ? Colors.white : null),
-                        onSelected: (val) => setState(() => _selectedType = 'free'),
+                        labelStyle: TextStyle(
+                          color: _selectedType == 'free' ? Colors.white : null,
+                        ),
+                        onSelected: (val) =>
+                            setState(() => _selectedType = 'free'),
                       ),
                     ],
                   ),
@@ -200,23 +232,39 @@ class _CreateCouponScreenState extends State<CreateCouponScreen> {
                   // 3. Value & Min Booking Amount
                   if (_selectedType != 'free') ...[
                     Text(
-                      _selectedType == 'fixed' ? 'قيمة الخصم بالجنيه' : 'نسبة الخصم (%)',
+                      _selectedType == 'fixed'
+                          ? 'قيمة الخصم بالجنيه'
+                          : 'نسبة الخصم (%)',
                       style: AppTypography.title(
-                        color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                        color: isDark
+                            ? AppColors.textPrimaryDark
+                            : AppColors.textPrimaryLight,
                       ).copyWith(fontWeight: FontWeight.bold),
                     ),
                     SizedBox(height: 10.h),
                     CustomTextField(
                       controller: _valueController,
-                      hintText: _selectedType == 'fixed' ? 'مثال: 50' : 'مثال: 25',
+                      hintText: _selectedType == 'fixed'
+                          ? 'مثال: 50'
+                          : 'مثال: 25',
                       keyboardType: TextInputType.number,
-                      prefixIcon: Icon(_selectedType == 'fixed' ? Icons.attach_money : Icons.percent),
+                      prefixIcon: Icon(
+                        _selectedType == 'fixed'
+                            ? Icons.attach_money
+                            : Icons.percent,
+                      ),
                       validator: (val) {
                         if (_selectedType == 'free') return null;
-                        if (val == null || val.trim().isEmpty) return 'يرجى إدخال قيمة الخصم';
+                        if (val == null || val.trim().isEmpty) {
+                          return 'يرجى إدخال قيمة الخصم';
+                        }
                         final numVal = double.tryParse(val.trim());
-                        if (numVal == null || numVal <= 0) return 'قيمة غير صالحة';
-                        if (_selectedType == 'percentage' && numVal > 100) return 'النسبة لا تزيد عن 100%';
+                        if (numVal == null || numVal <= 0) {
+                          return 'قيمة غير صالحة';
+                        }
+                        if (_selectedType == 'percentage' && numVal > 100) {
+                          return 'النسبة لا تزيد عن 100%';
+                        }
                         return null;
                       },
                     ),
@@ -226,7 +274,9 @@ class _CreateCouponScreenState extends State<CreateCouponScreen> {
                   Text(
                     'الحد الأدنى لقيمة الحجز (ج.م)',
                     style: AppTypography.title(
-                      color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                      color: isDark
+                          ? AppColors.textPrimaryDark
+                          : AppColors.textPrimaryLight,
                     ).copyWith(fontWeight: FontWeight.bold),
                   ),
                   SizedBox(height: 10.h),
@@ -234,7 +284,9 @@ class _CreateCouponScreenState extends State<CreateCouponScreen> {
                     controller: _minAmountController,
                     hintText: '0 تعني بدون حد أدنى',
                     keyboardType: TextInputType.number,
-                    prefixIcon: const Icon(Icons.account_balance_wallet_outlined),
+                    prefixIcon: const Icon(
+                      Icons.account_balance_wallet_outlined,
+                    ),
                   ),
 
                   SizedBox(height: 24.h),
@@ -243,7 +295,9 @@ class _CreateCouponScreenState extends State<CreateCouponScreen> {
                   Text(
                     'تاريخ انتهاء الكوبون',
                     style: AppTypography.title(
-                      color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                      color: isDark
+                          ? AppColors.textPrimaryDark
+                          : AppColors.textPrimaryLight,
                     ).copyWith(fontWeight: FontWeight.bold),
                   ),
                   SizedBox(height: 10.h),
@@ -251,25 +305,42 @@ class _CreateCouponScreenState extends State<CreateCouponScreen> {
                     onTap: _pickExpiryDate,
                     borderRadius: BorderRadius.circular(16.r),
                     child: Container(
-                      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 16.h),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 16.w,
+                        vertical: 16.h,
+                      ),
                       decoration: BoxDecoration(
-                        color: isDark ? AppColors.cardDark : AppColors.greyLight,
+                        color: isDark
+                            ? AppColors.cardDark
+                            : AppColors.greyLight,
                         borderRadius: BorderRadius.circular(16.r),
-                        border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+                        border: Border.all(
+                          color: AppColors.primary.withValues(alpha: 0.3),
+                        ),
                       ),
                       child: Row(
                         children: [
-                          Icon(Icons.calendar_today_outlined, color: AppColors.primary, size: 20.sp),
+                          Icon(
+                            Icons.calendar_today_outlined,
+                            color: AppColors.primary,
+                            size: 20.sp,
+                          ),
                           SizedBox(width: 12.w),
                           Expanded(
                             child: Text(
                               'ينتهي بتاريخ: ${DateFormat('yyyy-MM-dd').format(_expiresAt)}',
                               style: AppTypography.body(
-                                color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                                color: isDark
+                                    ? AppColors.textPrimaryDark
+                                    : AppColors.textPrimaryLight,
                               ).copyWith(fontWeight: FontWeight.bold),
                             ),
                           ),
-                          Icon(Icons.edit_calendar, color: AppColors.primary, size: 20.sp),
+                          Icon(
+                            Icons.edit_calendar,
+                            color: AppColors.primary,
+                            size: 20.sp,
+                          ),
                         ],
                       ),
                     ),
@@ -281,7 +352,9 @@ class _CreateCouponScreenState extends State<CreateCouponScreen> {
                   Text(
                     'الحد الأقصى لعدد مرات الاستخدام (اختياري)',
                     style: AppTypography.title(
-                      color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                      color: isDark
+                          ? AppColors.textPrimaryDark
+                          : AppColors.textPrimaryLight,
                     ).copyWith(fontWeight: FontWeight.bold),
                   ),
                   SizedBox(height: 10.h),

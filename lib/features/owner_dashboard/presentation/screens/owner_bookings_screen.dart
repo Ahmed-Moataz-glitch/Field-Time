@@ -5,19 +5,16 @@ import 'package:field_time/core/constants/app_colors.dart';
 import 'package:field_time/core/constants/app_typography.dart';
 import 'package:field_time/core/widgets/custom_text_field.dart';
 import 'package:field_time/features/booking/data/models/booking_model.dart';
-import 'package:field_time/features/owner_dashboard/data/repositories/owner_repository.dart';
 import 'package:field_time/features/owner_dashboard/presentation/cubit/owner_dashboard_cubit.dart';
 import 'package:field_time/features/owner_dashboard/presentation/cubit/owner_dashboard_state.dart';
 
 class OwnerBookingsScreen extends StatelessWidget {
-  const OwnerBookingsScreen({super.key});
+  final OwnerDashboardCubit? ownerDashboardCubit;
+  const OwnerBookingsScreen({super.key, this.ownerDashboardCubit});
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => OwnerDashboardCubit(OwnerRepository())..loadDashboardData(),
-      child: const _OwnerBookingsView(),
-    );
+    return const _OwnerBookingsView();
   }
 }
 
@@ -29,9 +26,15 @@ class _OwnerBookingsView extends StatefulWidget {
 }
 
 class _OwnerBookingsViewState extends State<_OwnerBookingsView> {
-  final TextEditingController _searchController = TextEditingController();
+  late final TextEditingController _searchController;
   String _activeTab = 'الكل';
   final List<String> _tabs = const ['الكل', 'المؤكدة', 'المكتملة', 'الملغاة'];
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController = TextEditingController();
+  }
 
   @override
   void dispose() {
@@ -48,7 +51,9 @@ class _OwnerBookingsViewState extends State<_OwnerBookingsView> {
         title: Text(
           'إدارة حجوزات اللاعبين',
           style: AppTypography.heading3(
-            color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+            color: isDark
+                ? AppColors.textPrimaryDark
+                : AppColors.textPrimaryLight,
           ),
         ),
         centerTitle: true,
@@ -86,19 +91,26 @@ class _OwnerBookingsViewState extends State<_OwnerBookingsView> {
                         decoration: BoxDecoration(
                           color: isSelected
                               ? AppColors.primary
-                              : (isDark ? AppColors.cardDark : AppColors.greyLight),
+                              : (isDark
+                                    ? AppColors.cardDark
+                                    : AppColors.greyLight),
                           borderRadius: BorderRadius.circular(14.r),
                         ),
                         alignment: Alignment.center,
                         child: Text(
                           tab,
-                          style: AppTypography.caption(
-                            color: isSelected
-                                ? Colors.white
-                                : (isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight),
-                          ).copyWith(
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                          ),
+                          style:
+                              AppTypography.caption(
+                                color: isSelected
+                                    ? Colors.white
+                                    : (isDark
+                                          ? AppColors.textSecondaryDark
+                                          : AppColors.textSecondaryLight),
+                              ).copyWith(
+                                fontWeight: isSelected
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                              ),
                         ),
                       ),
                     ),
@@ -114,15 +126,25 @@ class _OwnerBookingsViewState extends State<_OwnerBookingsView> {
               child: BlocBuilder<OwnerDashboardCubit, OwnerDashboardState>(
                 builder: (context, state) {
                   if (state is OwnerDashboardLoading) {
-                    return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+                    return const Center(
+                      child: CircularProgressIndicator(
+                        color: AppColors.primary,
+                      ),
+                    );
                   } else if (state is OwnerDashboardLoaded) {
                     final query = _searchController.text.trim().toLowerCase();
 
                     final filtered = state.bookings.where((b) {
                       // 1. Filter by Tab
-                      if (_activeTab == 'المؤكدة' && b.status != 'confirmed') return false;
-                      if (_activeTab == 'المكتملة' && b.status != 'completed') return false;
-                      if (_activeTab == 'الملغاة' && b.status != 'cancelled') return false;
+                      if (_activeTab == 'المؤكدة' && b.status != 'confirmed') {
+                        return false;
+                      }
+                      if (_activeTab == 'المكتملة' && b.status != 'completed') {
+                        return false;
+                      }
+                      if (_activeTab == 'الملغاة' && b.status != 'cancelled') {
+                        return false;
+                      }
 
                       // 2. Filter by Search Query
                       if (query.isNotEmpty) {
@@ -137,7 +159,9 @@ class _OwnerBookingsViewState extends State<_OwnerBookingsView> {
                       return Center(
                         child: Text(
                           'لا توجد حجوزات مطابقة',
-                          style: AppTypography.body(color: AppColors.textSecondaryLight),
+                          style: AppTypography.body(
+                            color: AppColors.textSecondaryLight,
+                          ),
                         ),
                       );
                     }
@@ -148,12 +172,20 @@ class _OwnerBookingsViewState extends State<_OwnerBookingsView> {
                           ListView.separated(
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
-                            padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 8.h),
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 20.w,
+                              vertical: 8.h,
+                            ),
                             itemCount: filtered.length,
-                            separatorBuilder: (context, index) => SizedBox(height: 12.h),
+                            separatorBuilder: (context, index) =>
+                                SizedBox(height: 12.h),
                             itemBuilder: (context, index) {
                               final booking = filtered[index];
-                              return _buildOwnerBookingCard(context, booking, isDark);
+                              return _buildOwnerBookingCard(
+                                context,
+                                booking,
+                                isDark,
+                              );
                             },
                           ),
                           SizedBox(height: 24.h),
@@ -171,7 +203,11 @@ class _OwnerBookingsViewState extends State<_OwnerBookingsView> {
     );
   }
 
-  Widget _buildOwnerBookingCard(BuildContext context, BookingModel booking, bool isDark) {
+  Widget _buildOwnerBookingCard(
+    BuildContext context,
+    BookingModel booking,
+    bool isDark,
+  ) {
     Color statusColor = AppColors.primary;
     String statusLabel = 'مؤكد';
 
@@ -191,7 +227,7 @@ class _OwnerBookingsViewState extends State<_OwnerBookingsView> {
         boxShadow: [
           if (!isDark)
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
+              color: AppColors.surfaceDark.withValues(alpha: 0.04),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -209,7 +245,9 @@ class _OwnerBookingsViewState extends State<_OwnerBookingsView> {
                   maxLines: 2,
                   overflow: TextOverflow.clip,
                   style: AppTypography.title(
-                    color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                    color: isDark
+                        ? AppColors.textPrimaryDark
+                        : AppColors.textPrimaryLight,
                   ).copyWith(fontWeight: FontWeight.bold),
                 ),
               ),
@@ -221,9 +259,9 @@ class _OwnerBookingsViewState extends State<_OwnerBookingsView> {
                 ),
                 child: Text(
                   statusLabel,
-                  style: AppTypography.small(color: statusColor).copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: AppTypography.small(
+                    color: statusColor,
+                  ).copyWith(fontWeight: FontWeight.bold),
                 ),
               ),
             ],
@@ -231,12 +269,18 @@ class _OwnerBookingsViewState extends State<_OwnerBookingsView> {
           SizedBox(height: 6.h),
           Row(
             children: [
-              Icon(Icons.calendar_month_outlined, size: 14.sp, color: AppColors.primary),
+              Icon(
+                Icons.calendar_month_outlined,
+                size: 14.sp,
+                color: AppColors.primary,
+              ),
               SizedBox(width: 6.w),
               Text(
                 '${booking.date} | ${booking.startTime} - ${booking.endTime}',
                 style: AppTypography.caption(
-                  color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                  color: isDark
+                      ? AppColors.textPrimaryDark
+                      : AppColors.textPrimaryLight,
                 ).copyWith(fontWeight: FontWeight.bold),
               ),
             ],
@@ -244,7 +288,11 @@ class _OwnerBookingsViewState extends State<_OwnerBookingsView> {
           SizedBox(height: 6.h),
           Row(
             children: [
-              Icon(Icons.confirmation_number_outlined, size: 14.sp, color: AppColors.iconGrey),
+              Icon(
+                Icons.confirmation_number_outlined,
+                size: 14.sp,
+                color: AppColors.iconGrey,
+              ),
               SizedBox(width: 6.w),
               Text(
                 booking.bookingCode,
@@ -253,9 +301,9 @@ class _OwnerBookingsViewState extends State<_OwnerBookingsView> {
               const Spacer(),
               Text(
                 '${booking.price.toInt()} ج.م',
-                style: AppTypography.body(color: AppColors.primary).copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+                style: AppTypography.body(
+                  color: AppColors.primary,
+                ).copyWith(fontWeight: FontWeight.bold),
               ),
             ],
           ),
@@ -266,14 +314,25 @@ class _OwnerBookingsViewState extends State<_OwnerBookingsView> {
                 child: OutlinedButton.icon(
                   onPressed: () {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('الاتصال بالمستأجر: 01012345678')),
+                      const SnackBar(
+                        content: Text('الاتصال بالمستأجر: 01012345678'),
+                      ),
                     );
                   },
-                  icon: Icon(Icons.phone_outlined, size: 16.sp, color: AppColors.primary),
-                  label: Text('اتصال بالمستأجر', style: AppTypography.small(color: AppColors.primary)),
+                  icon: Icon(
+                    Icons.phone_outlined,
+                    size: 16.sp,
+                    color: AppColors.primary,
+                  ),
+                  label: Text(
+                    'اتصال بالمستأجر',
+                    style: AppTypography.small(color: AppColors.primary),
+                  ),
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(color: AppColors.primary),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12.r),
+                    ),
                   ),
                 ),
               ),
