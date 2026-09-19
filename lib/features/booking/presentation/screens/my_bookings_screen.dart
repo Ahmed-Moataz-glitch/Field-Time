@@ -1,4 +1,4 @@
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:field_time/core/widgets/app_image.dart';
 import 'package:field_time/app/router/app_router.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -178,53 +178,160 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
             Expanded(
               child: BlocBuilder<BookingCubit, BookingState>(
                 builder: (context, state) {
-                  if (state is BookingLoading) {
+                  final activeTab = (state is BookingLoaded)
+                      ? state.activeTab
+                      : _bookingCubit.activeTab;
+
+                  if (state is BookingLoading && _bookingCubit.cachedBookings.isEmpty) {
                     return const Center(
                       child: CircularProgressIndicator(
                         color: AppColors.primary,
                       ),
                     );
-                  } else if (state is BookingLoaded) {
-                    final filteredBookings = state.bookings.where((b) {
-                      if (state.activeTab == 'القادمة') {
-                        return b.status == 'confirmed';
-                      }
-                      if (state.activeTab == 'السابقة') {
-                        return b.status == 'completed';
-                      }
-                      if (state.activeTab == 'ملغاة') {
-                        return b.status == 'cancelled';
-                      }
-                      return true;
-                    }).toList();
+                  }
 
-                    if (filteredBookings.isEmpty) {
-                      return Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.calendar_today_outlined,
-                              size: 48.sp,
-                              color: AppColors.iconGrey,
-                            ),
-                            SizedBox(height: 12.h),
-                            Text(
-                              isArabic
-                                  ? 'لا توجد حجوزات في هذا القسم'
-                                  : 'No bookings in this section',
-                              style: AppTypography.body(
-                                color: isDark
-                                    ? AppColors.textSecondaryDark
-                                    : AppColors.textSecondaryLight,
+                  if (state is BookingError && _bookingCubit.cachedBookings.isEmpty) {
+                    return RefreshIndicator(
+                      onRefresh: () => _bookingCubit.loadBookings(),
+                      color: AppColors.primary,
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          return SingleChildScrollView(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            child: ConstrainedBox(
+                              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                              child: Center(
+                                child: Padding(
+                                  padding: EdgeInsets.symmetric(horizontal: 24.w),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.error_outline_rounded,
+                                        size: 48.sp,
+                                        color: AppColors.error,
+                                      ),
+                                      SizedBox(height: 12.h),
+                                      Text(
+                                        state.message,
+                                        style: AppTypography.body(color: AppColors.error),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                      SizedBox(height: 16.h),
+                                      ElevatedButton(
+                                        onPressed: () => _bookingCubit.loadBookings(),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: AppColors.primary,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(12.r),
+                                          ),
+                                        ),
+                                        child: Text(
+                                          isArabic ? 'إعادة المحاولة' : 'Retry',
+                                          style: const TextStyle(color: Colors.white),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
                               ),
                             ),
-                          ],
-                        ),
-                      );
-                    }
+                          );
+                        },
+                      ),
+                    );
+                  }
 
-                    return ListView.builder(
+                  final bookings = (state is BookingLoaded)
+                      ? state.bookings
+                      : _bookingCubit.cachedBookings;
+
+                  if (bookings.isEmpty && state is BookingInitial) {
+                    _bookingCubit.loadBookings();
+                    return const Center(
+                      child: CircularProgressIndicator(
+                        color: AppColors.primary,
+                      ),
+                    );
+                  }
+
+                  final filteredBookings = bookings.where((b) {
+                    final status = b.status.toLowerCase();
+                    if (activeTab == 'القادمة') {
+                      return status == 'confirmed' || status == 'upcoming';
+                    }
+                    if (activeTab == 'السابقة') {
+                      return status == 'completed' || status == 'finished';
+                    }
+                    if (activeTab == 'ملغاة') {
+                      return status == 'cancelled' || status == 'canceled';
+                    }
+                    return true;
+                  }).toList();
+
+                  if (filteredBookings.isEmpty) {
+                    return RefreshIndicator(
+                      onRefresh: () => _bookingCubit.loadBookings(),
+                      color: AppColors.primary,
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          return SingleChildScrollView(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            child: ConstrainedBox(
+                              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                              child: Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Container(
+                                      padding: EdgeInsets.all(20.w),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.primary.withValues(alpha: 0.1),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Icon(
+                                        Icons.calendar_today_outlined,
+                                        size: 48.sp,
+                                        color: AppColors.primary,
+                                      ),
+                                    ),
+                                    SizedBox(height: 16.h),
+                                    Text(
+                                      isArabic
+                                          ? 'لا توجد حجوزات في هذا القسم'
+                                          : 'No bookings in this section',
+                                      style: AppTypography.title(
+                                        color: isDark
+                                            ? AppColors.textPrimaryDark
+                                            : AppColors.textPrimaryLight,
+                                      ).copyWith(fontWeight: FontWeight.bold),
+                                    ),
+                                    SizedBox(height: 8.h),
+                                    Text(
+                                      isArabic
+                                          ? 'يمكنك حجز ملعبك المفضل والبدء باللعب الآن'
+                                          : 'You can book your favorite field and start playing now',
+                                      style: AppTypography.caption(
+                                        color: isDark
+                                            ? AppColors.textSecondaryDark
+                                            : AppColors.textSecondaryLight,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    );
+                  }
+
+                  return RefreshIndicator(
+                    onRefresh: () => _bookingCubit.loadBookings(),
+                    color: AppColors.primary,
+                    child: ListView.builder(
+                      physics: const AlwaysScrollableScrollPhysics(),
                       padding: EdgeInsets.symmetric(
                         horizontal: 20.w,
                         vertical: 8.h,
@@ -239,16 +346,8 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
                           isArabic,
                         );
                       },
-                    );
-                  } else if (state is BookingError) {
-                    return Center(
-                      child: Text(
-                        state.message,
-                        style: AppTypography.body(color: AppColors.error),
-                      ),
-                    );
-                  }
-                  return const SizedBox.shrink();
+                    ),
+                  );
                 },
               ),
             ),
@@ -311,8 +410,8 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
                 children: [
                   ClipRRect(
                     borderRadius: BorderRadius.circular(14.r),
-                    child: CachedNetworkImage(
-                      imageUrl: booking.fieldImage,
+                    child: AppImage(
+                      imagePath: booking.fieldImage,
                       width: 80.w,
                       height: 80.h,
                       fit: BoxFit.cover,

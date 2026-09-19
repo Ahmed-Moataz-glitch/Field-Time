@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:field_time/core/constants/app_colors.dart';
 import 'package:field_time/features/booking/presentation/screens/my_bookings_screen.dart';
+import 'package:field_time/features/booking/presentation/cubit/booking_cubit.dart';
 import 'package:field_time/features/favorites/presentation/cubit/favorites_cubit.dart';
 import 'package:field_time/features/favorites/presentation/screens/favorites_screen.dart';
 import 'package:field_time/features/home/presentation/screens/home_screen.dart';
@@ -96,7 +97,11 @@ class _AppSectionState extends State<AppSection> {
               setState(() {
                 _currentIndex = index;
               });
-              if (index == 2) {
+              if (index == 1) {
+                try {
+                  context.read<BookingCubit>().loadBookings();
+                } catch (_) {}
+              } else if (index == 2) {
                 try {
                   context.read<FavoritesCubit>().loadFavorites(isRefresh: true);
                 } catch (_) {}

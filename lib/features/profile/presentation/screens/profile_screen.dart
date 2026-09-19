@@ -188,17 +188,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ).copyWith(fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
-        actions: [
-          IconButton(
-            icon: Icon(
-              Icons.settings_outlined,
-              color: isDark
-                  ? AppColors.textPrimaryDark
-                  : AppColors.textPrimaryLight,
-            ),
-            onPressed: () => _showSettingsSheet(context),
-          ),
-        ],
       ),
       body: SafeArea(
         child: SingleChildScrollView(

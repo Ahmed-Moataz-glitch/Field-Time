@@ -59,13 +59,18 @@ class FieldCard extends StatelessWidget {
                       placeholder: (_, __) => Container(
                         width: 115.w,
                         height: 115.h,
-                        color: isDark ? AppColors.backgroundDark : AppColors.greyLight,
+                        color: isDark
+                            ? AppColors.backgroundDark
+                            : AppColors.greyLight,
                       ),
                       errorWidget: (_, __, ___) => Container(
                         width: 115.w,
                         height: 115.h,
                         color: AppColors.primary.withValues(alpha: 0.1),
-                        child: const Icon(Icons.sports_soccer, color: AppColors.primary),
+                        child: const Icon(
+                          Icons.sports_soccer,
+                          color: AppColors.primary,
+                        ),
                       ),
                     ),
                   ),
@@ -76,20 +81,24 @@ class FieldCard extends StatelessWidget {
                   ),
                   if (field.isAvailableToday)
                     Positioned(
-                      top: 8.h,
-                      left: 8.w,
+                      top: 30.h,
+                      right: 8.w,
                       child: Container(
-                        padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 6.w,
+                          vertical: 2.h,
+                        ),
                         decoration: BoxDecoration(
                           color: AppColors.primary,
                           borderRadius: BorderRadius.circular(6.r),
                         ),
                         child: Text(
                           l10n?.availableBadge ?? 'متاح اليوم',
-                          style: AppTypography.small(color: Colors.white).copyWith(
-                            fontSize: 9.sp,
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: AppTypography.small(color: Colors.white)
+                              .copyWith(
+                                fontSize: 9.sp,
+                                fontWeight: FontWeight.bold,
+                              ),
                         ),
                       ),
                     ),
@@ -98,7 +107,10 @@ class FieldCard extends StatelessWidget {
                       top: 8.h,
                       right: 8.w,
                       child: Container(
-                        padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 6.w,
+                          vertical: 2.h,
+                        ),
                         decoration: BoxDecoration(
                           gradient: const LinearGradient(
                             colors: [Color(0xFFFF9800), Color(0xFFF57C00)],
@@ -115,14 +127,19 @@ class FieldCard extends StatelessWidget {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.confirmation_number_outlined, size: 10.sp, color: Colors.white),
+                            Icon(
+                              Icons.confirmation_number_outlined,
+                              size: 10.sp,
+                              color: Colors.white,
+                            ),
                             SizedBox(width: 2.w),
                             Text(
                               field.couponCode!,
-                              style: AppTypography.small(color: Colors.white).copyWith(
-                                fontSize: 9.sp,
-                                fontWeight: FontWeight.bold,
-                              ),
+                              style: AppTypography.small(color: Colors.white)
+                                  .copyWith(
+                                    fontSize: 9.sp,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                             ),
                           ],
                         ),
@@ -142,9 +159,15 @@ class FieldCard extends StatelessWidget {
                         Expanded(
                           child: Text(
                             field.name,
-                            style: AppTypography.title(
-                              color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
-                            ).copyWith(fontWeight: FontWeight.bold, fontSize: 16.sp),
+                            style:
+                                AppTypography.title(
+                                  color: isDark
+                                      ? AppColors.textPrimaryDark
+                                      : AppColors.textPrimaryLight,
+                                ).copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16.sp,
+                                ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -152,12 +175,18 @@ class FieldCard extends StatelessWidget {
                         if (onFavoriteToggle != null)
                           Semantics(
                             button: true,
-                            label: isFavorite ? 'إزالة من المفضلة' : 'إضافة إلى المفضلة',
+                            label: isFavorite
+                                ? 'إزالة من المفضلة'
+                                : 'إضافة إلى المفضلة',
                             child: GestureDetector(
                               onTap: onFavoriteToggle,
                               child: Icon(
-                                isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                                color: isFavorite ? AppColors.error : AppColors.iconGrey,
+                                isFavorite
+                                    ? Icons.favorite_rounded
+                                    : Icons.favorite_border_rounded,
+                                color: isFavorite
+                                    ? AppColors.error
+                                    : AppColors.iconGrey,
                                 size: 20.sp,
                               ),
                             ),
@@ -170,14 +199,20 @@ class FieldCard extends StatelessWidget {
                         Icon(
                           Icons.location_on_outlined,
                           size: 14.sp,
-                          color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                          color: isDark
+                              ? AppColors.textSecondaryDark
+                              : AppColors.textSecondaryLight,
                         ),
                         SizedBox(width: 2.w),
                         Expanded(
                           child: Text(
-                            field.address.isNotEmpty ? field.address : '${field.city} - ${field.area}',
+                            field.address.isNotEmpty
+                                ? field.address
+                                : '${field.city} - ${field.area}',
                             style: AppTypography.caption(
-                              color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                              color: isDark
+                                  ? AppColors.textSecondaryDark
+                                  : AppColors.textSecondaryLight,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -192,50 +227,78 @@ class FieldCard extends StatelessWidget {
                       runSpacing: 4.h,
                       children: [
                         Container(
-                          padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 8.w,
+                            vertical: 3.h,
+                          ),
                           decoration: BoxDecoration(
-                            color: isDark ? AppColors.backgroundDark : AppColors.greyLight,
+                            color: isDark
+                                ? AppColors.backgroundDark
+                                : AppColors.greyLight,
                             borderRadius: BorderRadius.circular(6.r),
                           ),
                           child: Text(
                             field.fieldType,
                             style: AppTypography.small(
-                              color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                              color: isDark
+                                  ? AppColors.textSecondaryDark
+                                  : AppColors.textSecondaryLight,
                             ).copyWith(fontSize: 10.sp),
                           ),
                         ),
                         Container(
-                          padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 8.w,
+                            vertical: 3.h,
+                          ),
                           decoration: BoxDecoration(
-                            color: isDark ? AppColors.backgroundDark : AppColors.greyLight,
+                            color: isDark
+                                ? AppColors.backgroundDark
+                                : AppColors.greyLight,
                             borderRadius: BorderRadius.circular(6.r),
                           ),
                           child: Text(
                             field.grassType,
                             style: AppTypography.small(
-                              color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                              color: isDark
+                                  ? AppColors.textSecondaryDark
+                                  : AppColors.textSecondaryLight,
                             ).copyWith(fontSize: 10.sp),
                           ),
                         ),
-                        if (field.couponTag != null && field.couponTag!.isNotEmpty)
+                        if (field.couponTag != null &&
+                            field.couponTag!.isNotEmpty)
                           Container(
-                            padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 8.w,
+                              vertical: 3.h,
+                            ),
                             decoration: BoxDecoration(
                               color: Colors.amber.withValues(alpha: 0.15),
-                              border: Border.all(color: Colors.amber.shade700, width: 0.8),
+                              border: Border.all(
+                                color: Colors.amber.shade700,
+                                width: 0.8,
+                              ),
                               borderRadius: BorderRadius.circular(6.r),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(Icons.local_offer_outlined, size: 10.sp, color: Colors.amber.shade800),
+                                Icon(
+                                  Icons.local_offer_outlined,
+                                  size: 10.sp,
+                                  color: Colors.amber.shade800,
+                                ),
                                 SizedBox(width: 3.w),
                                 Text(
                                   field.couponTag!,
-                                  style: AppTypography.small(color: Colors.amber.shade900).copyWith(
-                                    fontSize: 9.sp,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                                  style:
+                                      AppTypography.small(
+                                        color: Colors.amber.shade900,
+                                      ).copyWith(
+                                        fontSize: 9.sp,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                 ),
                               ],
                             ),
@@ -251,17 +314,22 @@ class FieldCard extends StatelessWidget {
                           children: [
                             Text(
                               '${field.pricePerHour.toInt()} ج.م',
-                              style: AppTypography.body(color: AppColors.primary).copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
+                              style: AppTypography.body(
+                                color: AppColors.primary,
+                              ).copyWith(fontWeight: FontWeight.bold),
                             ),
                             if (field.oldPrice != null) ...[
                               SizedBox(width: 6.w),
                               Text(
                                 '${field.oldPrice!.toInt()}',
-                                style: AppTypography.small(
-                                  color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
-                                ).copyWith(decoration: TextDecoration.lineThrough),
+                                style:
+                                    AppTypography.small(
+                                      color: isDark
+                                          ? AppColors.textSecondaryDark
+                                          : AppColors.textSecondaryLight,
+                                    ).copyWith(
+                                      decoration: TextDecoration.lineThrough,
+                                    ),
                               ),
                             ],
                           ],
@@ -271,13 +339,17 @@ class FieldCard extends StatelessWidget {
                             Icon(
                               Icons.near_me_outlined,
                               size: 13.sp,
-                              color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                              color: isDark
+                                  ? AppColors.textSecondaryDark
+                                  : AppColors.textSecondaryLight,
                             ),
                             SizedBox(width: 3.w),
                             Text(
                               field.distance,
                               style: AppTypography.small(
-                                color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                                color: isDark
+                                    ? AppColors.textSecondaryDark
+                                    : AppColors.textSecondaryLight,
                               ),
                             ),
                           ],

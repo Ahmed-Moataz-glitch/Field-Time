@@ -10,6 +10,12 @@ class BookingCubit extends Cubit<BookingState> {
   final BookingRepository _repository;
   final CouponRepository _couponRepository;
 
+  List<BookingModel> _cachedBookings = [];
+  String _activeTab = 'القادمة';
+
+  List<BookingModel> get cachedBookings => _cachedBookings;
+  String get activeTab => _activeTab;
+
   BookingCubit({
     BookingRepository? repository,
     CouponRepository? couponRepository,
@@ -21,16 +27,24 @@ class BookingCubit extends Cubit<BookingState> {
     emit(BookingLoading());
     try {
       final bookings = await _repository.getBookings();
-      emit(BookingLoaded(bookings: bookings));
+      _cachedBookings = bookings;
+      emit(BookingLoaded(bookings: _cachedBookings, activeTab: _activeTab));
     } catch (e) {
-      emit(BookingError(e.toString()));
+      if (_cachedBookings.isNotEmpty) {
+        emit(BookingLoaded(bookings: _cachedBookings, activeTab: _activeTab));
+      } else {
+        emit(BookingError(e.toString()));
+      }
     }
   }
 
   void changeTab(String tab) {
+    _activeTab = tab;
     if (state is BookingLoaded) {
       final currentState = state as BookingLoaded;
       emit(currentState.copyWith(activeTab: tab));
+    } else {
+      emit(BookingLoaded(bookings: _cachedBookings, activeTab: _activeTab));
     }
   }
 
@@ -43,7 +57,6 @@ class BookingCubit extends Cubit<BookingState> {
         fieldId: fieldId,
         date: date,
       );
-      emit(BookedSlotsLoaded(bookedSlots));
       return bookedSlots;
     } catch (_) {
       return {};

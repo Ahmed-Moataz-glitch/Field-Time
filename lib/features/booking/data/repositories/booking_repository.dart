@@ -49,17 +49,51 @@ class BookingRepository {
       status: 'confirmed',
       bookingCode: '#FT-2026-0804-0015',
     ),
+    const BookingModel(
+      id: 'booking-3',
+      fieldId: 'field-3',
+      userId: 'u1',
+      fieldName: 'كامب نو التجمع (Camp Nou)',
+      fieldAddress: 'مصر الجديدة - شارع الميرغني',
+      fieldImage: 'https://images.unsplash.com/photo-1556056504-5c7696c4c28d?auto=format&fit=crop&q=80&w=800',
+      date: '2026-07-20',
+      startTime: '20:00',
+      endTime: '21:00',
+      price: 450.0,
+      originalPrice: 450.0,
+      discountAmount: 0.0,
+      status: 'completed',
+      bookingCode: '#FT-2026-0720-0008',
+    ),
+    const BookingModel(
+      id: 'booking-4',
+      fieldId: 'field-4',
+      userId: 'u1',
+      fieldName: 'المكشوف إن دادي (InDoor Dome)',
+      fieldAddress: '6 أكتوبر - المحور المركزي',
+      fieldImage: 'https://images.unsplash.com/photo-1518091043644-c1d4457512c6?auto=format&fit=crop&q=80&w=800',
+      date: '2026-07-15',
+      startTime: '18:00',
+      endTime: '19:00',
+      price: 500.0,
+      originalPrice: 500.0,
+      discountAmount: 0.0,
+      status: 'cancelled',
+      bookingCode: '#FT-2026-0715-0003',
+    ),
   ];
 
   /// Get user bookings from Supabase DB or mock fallback
   Future<List<BookingModel>> getBookings() async {
     try {
       final user = _supabase.auth.currentUser;
-      var query = _supabase.from('bookings').select('*, football_fields(name, address)');
+      var query = _supabase.from('bookings').select('*, football_fields(name, address, main_image)');
       if (user != null) {
         query = query.eq('user_id', user.id);
       }
-      final response = await query.order('created_at', ascending: false);
+      final response = await query
+          .order('created_at', ascending: false)
+          .timeout(const Duration(seconds: 8));
 
       if ((response as List).isNotEmpty) {
         return response.map((item) => BookingModel.fromJson(item)).toList();
@@ -171,7 +205,7 @@ class BookingRepository {
 
     // Save to Supabase DB
     try {
-      await _supabase.from('bookings').insert(newBooking.toJson());
+      await _supabase.from('bookings').insert(newBooking.toInsertJson());
 
       // If a valid coupon was applied, increment its usage count
       if (couponId != null && couponId.isNotEmpty) {

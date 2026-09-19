@@ -42,16 +42,29 @@ class BookingModel extends Equatable {
         0.0;
     final double origPrice = (json['original_price'] as num?)?.toDouble() ?? totalPrice;
 
+    final rawStartTime = json['start_time'] as String? ?? '';
+    final rawEndTime = json['end_time'] as String? ?? '';
+    final formattedStartTime =
+        rawStartTime.length >= 5 ? rawStartTime.substring(0, 5) : rawStartTime;
+    final formattedEndTime =
+        rawEndTime.length >= 5 ? rawEndTime.substring(0, 5) : rawEndTime;
+
+    final image = (fieldMap?['main_image'] as String?)?.isNotEmpty == true
+        ? fieldMap!['main_image'] as String
+        : (json['field_image'] as String?)?.isNotEmpty == true
+            ? json['field_image'] as String
+            : 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&q=80&w=800';
+
     return BookingModel(
       id: json['id'] as String? ?? '',
       fieldId: json['field_id'] as String? ?? '',
       userId: json['user_id'] as String?,
       fieldName: fieldMap?['name'] as String? ?? json['field_name'] as String? ?? '',
       fieldAddress: fieldMap?['address'] as String? ?? json['field_address'] as String? ?? '',
-      fieldImage: fieldMap?['main_image'] as String? ?? json['field_image'] as String? ?? '',
+      fieldImage: image,
       date: json['booking_date'] as String? ?? json['date'] as String? ?? '',
-      startTime: json['start_time'] as String? ?? '',
-      endTime: json['end_time'] as String? ?? '',
+      startTime: formattedStartTime,
+      endTime: formattedEndTime,
       price: totalPrice,
       originalPrice: origPrice,
       discountAmount: (json['discount_amount'] as num?)?.toDouble() ?? 0.0,
@@ -69,6 +82,22 @@ class BookingModel extends Equatable {
       'booking_date': date,
       'start_time': startTime,
       'end_time': endTime,
+      'total_price': price,
+      'original_price': originalPrice,
+      'discount_amount': discountAmount,
+      if (couponCode != null && couponCode!.isNotEmpty) 'coupon_code': couponCode,
+      'status': status,
+      'booking_code': bookingCode,
+    };
+  }
+
+  Map<String, dynamic> toInsertJson() {
+    return {
+      'field_id': fieldId,
+      if (userId != null && userId != 'u1') 'user_id': userId,
+      'booking_date': date,
+      'start_time': startTime.length <= 5 ? '$startTime:00' : startTime,
+      'end_time': endTime.length <= 5 ? '$endTime:00' : endTime,
       'total_price': price,
       'original_price': originalPrice,
       'discount_amount': discountAmount,
